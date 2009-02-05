@@ -15,8 +15,11 @@ on_expose_event (GtkWidget      *widget,
   cairo_t *cr;
 
   cr = gdk_cairo_create (widget->window);
+
+  /* Ideally the widget will provide a context */
   context = g_object_new (GTK_TYPE_STYLE_CONTEXT, NULL);
 
+  /* Set radius for box borders */
   gtk_style_context_set_param_int (context, "radius", 15);
 
   width = (widget->allocation.width - 2 * BORDER) / N_COLS;
@@ -27,6 +30,7 @@ on_expose_event (GtkWidget      *widget,
     {
       GtkPlacingContext placing = 0;
 
+      /* Specify where will the row connect with others */
       if (r > 0)
         placing |= GTK_PLACING_CONNECTS_UP;
 
@@ -37,10 +41,12 @@ on_expose_event (GtkWidget      *widget,
 
       for (c = 0; c < N_COLS; c++)
         {
+          /* Save context so we can restore later the previous placing */
           gtk_style_context_save (context);
 
           placing = gtk_style_context_get_placing_context (context);
 
+          /* Specify where will the column connect with others */
           if (c > 0)
             placing |= GTK_PLACING_CONNECTS_LEFT;
 
@@ -55,10 +61,17 @@ on_expose_event (GtkWidget      *widget,
               gtk_style_context_set_color (context, &color);
             }
 
+          /* Paint box, GtkStyleContext will use the placing
+           * info to know which are the rounded corners in
+           * the box group.
+           */
           gtk_depict_box (context, cr, x, y, width, height);
 
           x += width;
 
+          /* Restore context to reset placing to
+           * the previous value and unset color
+           */
           gtk_style_context_restore (context);
         }
 
