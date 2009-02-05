@@ -36,6 +36,13 @@ G_BEGIN_DECLS
 #define GTK_IS_STYLE_CONTEXT_CLASS(c)   (G_TYPE_CHECK_CLASS_TYPE ((c),    GTK_TYPE_STYLE_CONTEXT))
 #define GTK_STYLE_CONTEXT_GET_CLASS(o)  (G_TYPE_INSTANCE_GET_CLASS ((o),  GTK_TYPE_STYLE_CONTEXT, GtkStyleContextClass))
 
+/* Usual context parameters */
+#define GTK_STYLE_CONTEXT_PARAMETER_WIDGET_GTYPE        "widget::gtype"
+#define GTK_STYLE_CONTEXT_PARAMETER_WIDGET_STATE        "widget::state"
+#define GTK_STYLE_CONTEXT_PARAMETER_WIDGET_PLACING      "widget::placing"
+#define GTK_STYLE_CONTEXT_PARAMETER_EXPOSE_CLIP_AREA    "expose::clip-area"
+#define GTK_STYLE_CONTEXT_PARAMETER_EXPOSE_CONTENT_ROLE "expose::content-role"
+
 typedef struct GtkStyleContext GtkStyleContext;
 typedef struct GtkStyleContextClass GtkStyleContextClass;
 
@@ -47,18 +54,80 @@ struct GtkStyleContext
 struct GtkStyleContextClass
 {
   GObjectClass parent_class;
+
+  void (* paint_box) (GtkStyleContext *context,
+                      cairo_t         *cr,
+                      gint             x,
+                      gint             y,
+                      gint             width,
+                      gint             height);
 };
 
 
 GType     gtk_style_context_get_type (void) G_GNUC_CONST;
 
+/* Context saving/restoring */
 void      gtk_style_context_save         (GtkStyleContext *context);
 void      gtk_style_context_restore      (GtkStyleContext *context);
 
-void      gtk_style_context_add_param    (GtkStyleContext *context,
-                                          const gchar     *param);
+/* Generic parameter functions */
+void      gtk_style_context_set_param    (GtkStyleContext *context,
+                                          const gchar     *param,
+                                          const GValue    *value);
+gboolean  gtk_style_context_get_param    (GtkStyleContext *context,
+                                          const gchar     *param,
+                                          GValue          *value);
 gboolean  gtk_style_context_param_exists (GtkStyleContext *context,
                                           const gchar     *param);
+void      gtk_style_context_unset_param  (GtkStyleContext *context,
+                                          const gchar     *param);
+
+/* Helpers for different types */
+void      gtk_style_context_set_param_int  (GtkStyleContext *context,
+                                            const gchar     *param,
+                                            gint             param_value);
+gint      gtk_style_context_get_param_int  (GtkStyleContext *context,
+                                            const gchar     *param);
+
+void      gtk_style_context_set_param_flag (GtkStyleContext *context,
+                                            const gchar     *param);
+
+/* Specific option helpers */
+void      gtk_style_context_set_gtype           (GtkStyleContext     *context,
+                                                 GType                type);
+GType     gtk_style_context_get_gtype           (GtkStyleContext     *context);
+
+void      gtk_style_context_set_clip_area       (GtkStyleContext     *context,
+                                                 const GdkRectangle  *clip_area);
+gboolean  gtk_style_context_get_clip_area       (GtkStyleContext     *context,
+                                                 GdkRectangle        *rectangle);
+void      gtk_style_context_set_role            (GtkStyleContext     *context,
+                                                 GtkStyleContextRole  role);
+GtkStyleContextRole
+          gtk_style_context_get_role            (GtkStyleContext     *context);
+
+void      gtk_style_context_set_state           (GtkStyleContext     *context,
+                                                 GtkWidgetState       state);
+GtkWidgetState
+          gtk_style_context_get_state           (GtkStyleContext     *context);
+
+void      gtk_style_context_set_placing_context (GtkStyleContext     *context,
+                                                 GtkPlacingContext    placing);
+GtkPlacingContext
+          gtk_style_context_get_placing_context (GtkStyleContext     *context);
+
+void      gtk_style_context_set_color           (GtkStyleContext     *context,
+                                                 const GdkColor      *color);
+gboolean  gtk_style_context_get_color           (GtkStyleContext     *context,
+                                                 GdkColor            *color);
+
+/* Paint functions */
+void      gtk_depict_box                        (GtkStyleContext *context,
+                                                 cairo_t         *cr,
+                                                 gint             x,
+                                                 gint             y,
+                                                 gint             width,
+                                                 gint             height);
 
 G_END_DECLS
 
