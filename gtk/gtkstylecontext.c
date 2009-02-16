@@ -109,6 +109,36 @@ gtk_style_context_init (GtkStyleContext *context)
   priv->reverse_context_stack = priv->context_stack = g_list_prepend (priv->context_stack, create_subcontext ());
 }
 
+static GtkStyleContextAnimInfo *
+animation_info_new (GtkTimeline    *timeline,
+                    GtkWidget      *widget,
+                    gpointer        identifier,
+                    GtkWidgetState  state,
+                    gboolean        target_value)
+{
+  GtkStyleContextAnimInfo *anim_info;
+
+  anim_info = g_slice_new (GtkStyleContextAnimInfo);
+
+  anim_info->widget = g_object_ref (widget);
+  anim_info->identifier = identifier;
+  anim_info->state = state;
+  anim_info->target_value = target_value;
+  anim_info->timeline = timeline;
+  anim_info->invalidation_region = NULL;
+
+  return anim_info;
+}
+
+static void
+animation_info_free (GtkStyleContextAnimInfo *anim_info)
+{
+  g_object_unref (anim_info->timeline);
+  g_object_unref (anim_info->widget);
+
+  g_slice_free (GtkStyleContextAnimInfo, anim_info);
+}
+
 static void
 gtk_style_context_finalize (GObject *object)
 {
@@ -120,6 +150,11 @@ gtk_style_context_finalize (GObject *object)
   g_list_free (priv->context_stack);
 
   g_hash_table_destroy (priv->composed_context);
+
+  g_list_free (priv->regions_stack);
+
+  g_list_foreach (priv->animations, (GFunc) animation_info_free, NULL);
+  g_list_free (priv->animations);
 
   G_OBJECT_CLASS (gtk_style_context_parent_class)->finalize (object);
 }
@@ -741,10 +776,7 @@ timeline_finished_cb (GtkTimeline *timeline,
       if (anim_info->timeline == timeline)
         {
           priv->animations = g_list_delete_link (priv->animations, anims);
-
-          g_object_unref (anim_info->timeline);
-          g_object_unref (anim_info->widget);
-          g_slice_free (GtkStyleContextAnimInfo, anim_info);
+          animation_info_free (anim_info);
           break;
         }
     }
@@ -786,13 +818,8 @@ gtk_style_context_modify_state (GtkStyleContext *context,
   if (!timeline)
     return;
 
-  anim_info = g_slice_new (GtkStyleContextAnimInfo);
-  anim_info->widget = g_object_ref (widget);
-  anim_info->identifier = identifier;
-  anim_info->state = state;
-  anim_info->target_value = target_value;
-  anim_info->timeline = timeline;
-  anim_info->invalidation_region = NULL;
+  anim_info = animation_info_new (timeline, widget, identifier,
+                                  state, target_value);
 
   if (target_value == FALSE)
     {
