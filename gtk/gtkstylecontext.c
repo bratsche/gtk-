@@ -707,7 +707,6 @@ timeline_frame_cb (GtkTimeline *timeline,
 {
   GtkWidget *widget;
 
-  g_print (">>> %f\n", progress);
   widget = GTK_WIDGET (user_data);
 
   gtk_widget_queue_draw (widget);
@@ -754,14 +753,16 @@ gtk_style_context_modify_state (GtkStyleContext *context,
   /* First check if there is any animation already running */
   anim_info = _gtk_timeline_context_get_anim_info (context, identifier, state);
 
-  g_print ("anim_info? %p\n", anim_info);
-
   if (anim_info)
     {
       /* Reverse the animation if target values are the opposite */
       if (anim_info->target_value != target_value)
         {
-          gtk_timeline_set_direction (anim_info->timeline, GTK_TIMELINE_DIRECTION_BACKWARD);
+          if (target_value)
+            gtk_timeline_set_direction (anim_info->timeline, GTK_TIMELINE_DIRECTION_FORWARD);
+          else
+            gtk_timeline_set_direction (anim_info->timeline, GTK_TIMELINE_DIRECTION_BACKWARD);
+
           anim_info->target_value = target_value;
         }
 
@@ -782,7 +783,6 @@ gtk_style_context_modify_state (GtkStyleContext *context,
 
   if (target_value == FALSE)
     {
-      g_print ("reversing animation\n");
       gtk_timeline_set_direction (timeline, GTK_TIMELINE_DIRECTION_BACKWARD);
       gtk_timeline_rewind (timeline);
     }
