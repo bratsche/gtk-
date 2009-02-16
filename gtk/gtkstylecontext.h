@@ -136,19 +136,18 @@ gboolean  gtk_style_context_get_color           (GtkStyleContext     *context,
                                                  GdkColor            *color);
 
 /* animation functions */
-void      gtk_style_context_push_region         (GtkStyleContext     *context,
-                                                 gpointer             identifier);
-void      gtk_style_context_pop_region          (GtkStyleContext     *context);
+void      gtk_style_context_push_activatable_region (GtkStyleContext     *context,
+                                                     gpointer             identifier);
+void      gtk_style_context_pop_activatable_region  (GtkStyleContext     *context);
 
-void      gtk_style_context_modify_state        (GtkStyleContext     *context,
-                                                 GtkWidget           *widget,
-                                                 gpointer             identifier,
-                                                 GtkWidgetState       state,
-                                                 gboolean             target_value);
-gboolean  gtk_style_context_get_region_progress (GtkStyleContext     *context,
-                                                 gpointer             identifier,
-                                                 GtkWidgetState       state,
-                                                 gdouble             *progress);
+void      gtk_style_context_modify_state            (GtkStyleContext     *context,
+                                                     GtkWidget           *widget,
+                                                     gpointer             identifier,
+                                                     GtkWidgetState       state,
+                                                     gboolean             target_value);
+gboolean  gtk_style_context_get_state_progress      (GtkStyleContext     *context,
+                                                     GtkWidgetState       state,
+                                                     gdouble             *progress);
 
 /* Paint functions */
 void      gtk_depict_box                        (GtkStyleContext *context,
