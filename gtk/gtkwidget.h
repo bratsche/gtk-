@@ -36,6 +36,7 @@
 #include <gtk/gtkobject.h>
 #include <gtk/gtkadjustment.h>
 #include <gtk/gtkstyle.h>
+#include <gtk/gtkstylecontext.h>
 #include <gtk/gtksettings.h>
 #include <atk/atk.h>
 
@@ -686,6 +687,11 @@ void        gtk_widget_modify_cursor      (GtkWidget            *widget,
 					   const GdkColor       *secondary);
 void        gtk_widget_modify_font        (GtkWidget            *widget,
 					   PangoFontDescription *font_desc);
+
+/* Style Context */
+void              gtk_widget_ensure_style_context  (GtkWidget *widget);
+GtkStyleContext * gtk_widget_get_style_context     (GtkWidget *widget);
+
 
 #ifndef GTK_DISABLE_DEPRECATED
 #define gtk_widget_set_rc_style(widget)          (gtk_widget_set_style (widget, NULL))
