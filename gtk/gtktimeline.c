@@ -439,15 +439,16 @@ gtk_timeline_rewind (GtkTimeline *timeline)
 
   priv = GTK_TIMELINE_GET_PRIV (timeline);
 
+  if (gtk_timeline_get_direction(timeline) != GTK_TIMELINE_DIRECTION_FORWARD)
+    priv->progress = priv->last_progress = 1.;
+  else
+    priv->progress = priv->last_progress = 0.;
+
   /* reset timer */
   if (priv->timer)
     {
-      if (gtk_timeline_get_direction(timeline) != GTK_TIMELINE_DIRECTION_FORWARD)
-      	priv->last_progress = 1.0;
-      else
-	priv->last_progress = 0;
-
       g_timer_start (priv->timer);
+
       if (!priv->source_id)
         g_timer_stop (priv->timer);
     }
