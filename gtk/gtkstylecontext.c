@@ -18,22 +18,39 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#include "gtkstylecontext.h"
+#include <gtk/gtkstylecontext.h>
+#include <gtk/gtktypebuiltins.h>
+#include "gtkwidget.h"
 
 #define GTK_STYLE_CONTEXT_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), GTK_TYPE_STYLE_CONTEXT, GtkStyleContextPrivate))
 #define GET_CURRENT_CONTEXT(p) ((GHashTable *) (p)->context_stack->data)
 
 typedef struct GtkStyleContextPrivate GtkStyleContextPrivate;
+typedef struct GtkStyleContextAnimInfo GtkStyleContextAnimInfo;
 
 struct GtkStyleContextPrivate
 {
   GHashTable *composed_context;
   GList *context_stack;
   GList *reverse_context_stack;
+
+  GList *animations;
+  GList *regions_stack;
+};
+
+struct GtkStyleContextAnimInfo
+{
+  GtkTimeline *timeline;
+  gpointer identifier;
+  GtkWidgetState state;
+  gboolean target_value;
 };
 
 
 static void gtk_style_context_finalize (GObject *object);
+
+static GtkTimeline * gtk_style_context_create_animation (GtkStyleContext *context,
+                                                         GtkWidgetState   state);
 
 static void gtk_style_context_paint_box (GtkStyleContext *context,
                                          cairo_t         *cr,
@@ -50,6 +67,8 @@ gtk_style_context_class_init (GtkStyleContextClass *klass)
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
   object_class->finalize = gtk_style_context_finalize;
+
+  klass->create_animation = gtk_style_context_create_animation;
   klass->paint_box = gtk_style_context_paint_box;
 
   g_type_class_add_private (klass, sizeof (GtkStyleContextPrivate));
@@ -432,6 +451,28 @@ gtk_style_context_get_state (GtkStyleContext *context)
 }
 
 void
+gtk_style_context_set_state_flags (GtkStyleContext *context,
+                                  GtkWidgetState   state)
+{
+  GtkWidgetState saved_state;
+
+  saved_state = gtk_style_context_get_state (context);
+  saved_state |= state;
+  gtk_style_context_set_state (context, saved_state);
+}
+
+void
+gtk_style_context_unset_state_flags (GtkStyleContext *context,
+                                     GtkWidgetState   state)
+{
+  GtkWidgetState saved_state;
+
+  saved_state = gtk_style_context_get_state (context);
+  saved_state &= ~(state);
+  gtk_style_context_set_state (context, saved_state);
+}
+
+void
 gtk_style_context_set_placing_context (GtkStyleContext   *context,
                                        GtkPlacingContext  placing)
 {
@@ -503,6 +544,17 @@ gtk_style_context_get_color (GtkStyleContext *context,
   return TRUE;
 }
 
+static GtkTimeline *
+gtk_style_context_create_animation (GtkStyleContext *context,
+                                    GtkWidgetState   state)
+{
+  GtkTimeline *timeline;
+
+  timeline = gtk_timeline_new (2000);
+
+  return timeline;
+}
+
 /* Paint methods default implementations */
 static void
 gtk_style_context_paint_box (GtkStyleContext *context,
@@ -515,14 +567,26 @@ gtk_style_context_paint_box (GtkStyleContext *context,
   GtkPlacingContext placing;
   GdkColor color;
   gint radius;
+  gdouble progress;
 
   radius = gtk_style_context_get_param_int (context, "radius");
   placing = gtk_style_context_get_placing_context (context);
 
-  if (gtk_style_context_get_color (context, &color))
-    gdk_cairo_set_source_color (cr, &color);
+  if (gtk_style_context_get_region_progress (context, NULL, GTK_WIDGET_STATE_PRELIGHT, &progress))
+    cairo_set_source_rgb (cr, progress, progress, progress);
   else
-    cairo_set_source_rgb (cr, 0.5, 0.5, 0.5);
+    {
+      GtkWidgetState state;
+
+      state = gtk_style_context_get_state (context);
+
+      if (gtk_style_context_get_color (context, &color))
+        gdk_cairo_set_source_color (cr, &color);
+      else if (state & GTK_WIDGET_STATE_PRELIGHT)
+        cairo_set_source_rgb (cr, 1., 1., 1.);
+      else
+        cairo_set_source_rgb (cr, 0., 0., 0.);
+    }
 
   if (radius == 0)
     cairo_rectangle (cr,
@@ -586,6 +650,171 @@ gtk_style_context_paint_box (GtkStyleContext *context,
       cairo_set_source_rgb (cr, 0, 0, 0);
       cairo_stroke (cr);
     }
+}
+
+/* Animation functions */
+void
+gtk_style_context_push_region (GtkStyleContext *context,
+                               gpointer         identifier)
+{
+  GtkStyleContextPrivate *priv;
+
+  g_return_if_fail (GTK_IS_STYLE_CONTEXT (context));
+
+  priv = GTK_STYLE_CONTEXT_GET_PRIVATE (context);
+
+  priv->regions_stack = g_list_prepend (priv->regions_stack, identifier);
+}
+
+void
+gtk_style_context_pop_region (GtkStyleContext *context)
+{
+  GtkStyleContextPrivate *priv;
+
+  g_return_if_fail (GTK_IS_STYLE_CONTEXT (context));
+
+  priv = GTK_STYLE_CONTEXT_GET_PRIVATE (context);
+  priv->regions_stack = g_list_delete_link (priv->regions_stack, priv->regions_stack);
+}
+
+static GtkStyleContextAnimInfo *
+_gtk_timeline_context_get_anim_info (GtkStyleContext *context,
+                                     gpointer         identifier,
+                                     GtkWidgetState   state)
+{
+  GtkStyleContextAnimInfo *anim_info;
+  GtkStyleContextPrivate *priv;
+  GList *anims;
+
+  priv = GTK_STYLE_CONTEXT_GET_PRIVATE (context);
+
+  for (anims = priv->animations; anims; anims = anims->next)
+    {
+      anim_info = anims->data;
+
+      if (anim_info->state == state &&
+          anim_info->identifier == identifier)
+        return anim_info;
+    }
+
+  return NULL;
+}
+
+static void
+timeline_frame_cb (GtkTimeline *timeline,
+                   gdouble      progress,
+                   gpointer     user_data)
+{
+  GtkWidget *widget;
+
+  g_print (">>> %f\n", progress);
+  widget = GTK_WIDGET (user_data);
+
+  gtk_widget_queue_draw (widget);
+}
+
+static void
+timeline_finished_cb (GtkTimeline *timeline,
+                      gpointer     user_data)
+{
+  GtkStyleContextAnimInfo *anim_info;
+  GtkStyleContextPrivate *priv;
+  GtkStyleContext *context;
+  GList *anims;
+
+  context = GTK_STYLE_CONTEXT (user_data);
+  priv = GTK_STYLE_CONTEXT_GET_PRIVATE (context);
+
+  for (anims = priv->animations; anims; anims = anims->next)
+    {
+      anim_info = anims->data;
+
+      if (anim_info->timeline == timeline)
+        {
+          priv->animations = g_list_delete_link (priv->animations, anims);
+
+          g_object_unref (timeline);
+          g_slice_free (GtkStyleContextAnimInfo, anim_info);
+          break;
+        }
+    }
+}
+
+void
+gtk_style_context_modify_state (GtkStyleContext *context,
+                                GtkWidget       *widget,
+                                gpointer         identifier,
+                                GtkWidgetState   state,
+                                gboolean         target_value)
+{
+  GtkTimeline *timeline;
+  GtkStyleContextAnimInfo *anim_info;
+  GtkStyleContextPrivate *priv;
+
+  /* First check if there is any animation already running */
+  anim_info = _gtk_timeline_context_get_anim_info (context, identifier, state);
+
+  g_print ("anim_info? %p\n", anim_info);
+
+  if (anim_info)
+    {
+      /* Reverse the animation if target values are the opposite */
+      if (anim_info->target_value != target_value)
+        {
+          gtk_timeline_set_direction (anim_info->timeline, GTK_TIMELINE_DIRECTION_BACKWARD);
+          anim_info->target_value = target_value;
+        }
+
+      return;
+    }
+
+  priv = GTK_STYLE_CONTEXT_GET_PRIVATE (context);
+  timeline = GTK_STYLE_CONTEXT_GET_CLASS (context)->create_animation (context, state);
+
+  if (!timeline)
+    return;
+
+  anim_info = g_slice_new (GtkStyleContextAnimInfo);
+  anim_info->identifier = identifier;
+  anim_info->state = state;
+  anim_info->target_value = target_value;
+  anim_info->timeline = timeline;
+
+  if (target_value == FALSE)
+    {
+      g_print ("reversing animation\n");
+      gtk_timeline_set_direction (timeline, GTK_TIMELINE_DIRECTION_BACKWARD);
+      gtk_timeline_rewind (timeline);
+    }
+
+  gtk_timeline_start (timeline);
+  g_signal_connect (timeline, "frame",
+                    G_CALLBACK (timeline_frame_cb), widget);
+  g_signal_connect (timeline, "finished",
+                    G_CALLBACK (timeline_finished_cb), context);
+
+  priv->animations = g_list_prepend (priv->animations, anim_info);
+}
+
+gboolean
+gtk_style_context_get_region_progress (GtkStyleContext *context,
+                                       gpointer         identifier,
+                                       GtkWidgetState   state,
+                                       gdouble         *progress)
+{
+  GtkStyleContextAnimInfo *anim_info;
+
+  anim_info = _gtk_timeline_context_get_anim_info (context, identifier, state);
+
+  if (anim_info)
+    {
+      if (progress)
+        *progress = gtk_timeline_get_progress (anim_info->timeline);
+
+      return TRUE;
+    }
+
+  return FALSE;
 }
 
 /* Paint functions */

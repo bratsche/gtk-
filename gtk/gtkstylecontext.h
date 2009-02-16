@@ -25,7 +25,13 @@
 #error "Only <gtk/gtk.h> can be included directly."
 #endif
 
-#include <gtk/gtkwidget.h>
+#include <gtk/gtktimeline.h>
+#include <gtk/gtkenums.h>
+
+/* Just include this because the forward
+ * declaration for GtkWidget is there
+ */
+#include <gtk/gtkstyle.h>
 
 G_BEGIN_DECLS
 
@@ -54,6 +60,9 @@ struct GtkStyleContext
 struct GtkStyleContextClass
 {
   GObjectClass parent_class;
+
+  GtkTimeline * (* create_animation) (GtkStyleContext *context,
+                                      GtkWidgetState   state);
 
   void (* paint_box) (GtkStyleContext *context,
                       cairo_t         *cr,
@@ -111,6 +120,11 @@ void      gtk_style_context_set_state           (GtkStyleContext     *context,
 GtkWidgetState
           gtk_style_context_get_state           (GtkStyleContext     *context);
 
+void      gtk_style_context_set_state_flags     (GtkStyleContext     *context,
+                                                 GtkWidgetState       state);
+void      gtk_style_context_unset_state_flags   (GtkStyleContext     *context,
+                                                 GtkWidgetState       state);
+
 void      gtk_style_context_set_placing_context (GtkStyleContext     *context,
                                                  GtkPlacingContext    placing);
 GtkPlacingContext
@@ -120,6 +134,21 @@ void      gtk_style_context_set_color           (GtkStyleContext     *context,
                                                  const GdkColor      *color);
 gboolean  gtk_style_context_get_color           (GtkStyleContext     *context,
                                                  GdkColor            *color);
+
+/* animation functions */
+void      gtk_style_context_push_region         (GtkStyleContext     *context,
+                                                 gpointer             identifier);
+void      gtk_style_context_pop_region          (GtkStyleContext     *context);
+
+void      gtk_style_context_modify_state        (GtkStyleContext     *context,
+                                                 GtkWidget           *widget,
+                                                 gpointer             identifier,
+                                                 GtkWidgetState       state,
+                                                 gboolean             target_value);
+gboolean  gtk_style_context_get_region_progress (GtkStyleContext     *context,
+                                                 gpointer             identifier,
+                                                 GtkWidgetState       state,
+                                                 gdouble             *progress);
 
 /* Paint functions */
 void      gtk_depict_box                        (GtkStyleContext *context,
