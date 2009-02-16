@@ -20,7 +20,8 @@
  */
 
 #include <gtk/gtktimeline.h>
-#include <glib-object.h>
+#include <gtk/gtktypebuiltins.h>
+#include <gtk/gtksettings.h>
 #include <math.h>
 
 #define GTK_TIMELINE_GET_PRIV(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_TIMELINE, GtkTimelinePriv))
@@ -38,7 +39,9 @@ struct GtkTimelinePriv
 
   GTimer *timer;
 
+  gdouble progress;
   gdouble last_progress;
+
   GdkScreen *screen;
 
   guint animations_enabled : 1;
@@ -300,10 +303,11 @@ gtk_timeline_run_frame (GtkTimeline *timeline)
   else
     progress = (priv->direction == GTK_TIMELINE_DIRECTION_FORWARD) ? 1.0 : 0.0;
 
+  priv->progress = progress;
   g_signal_emit (timeline, signals [FRAME], 0, progress);
 
-  if ((priv->direction == GTK_TIMELINE_DIRECTION_FORWARD && progress >= 1.0) ||
-      (priv->direction == GTK_TIMELINE_DIRECTION_BACKWARD && progress <= 0.0))
+  if ((priv->direction == GTK_TIMELINE_DIRECTION_FORWARD && progress == 1.0) ||
+      (priv->direction == GTK_TIMELINE_DIRECTION_BACKWARD && progress == 0.0))
     {
       if (!priv->loop)
 	{
@@ -665,6 +669,17 @@ gtk_timeline_get_screen (GtkTimeline *timeline)
 
   priv = GTK_TIMELINE_GET_PRIV (timeline);
   return priv->screen;
+}
+
+gdouble
+gtk_timeline_get_progress (GtkTimeline *timeline)
+{
+  GtkTimelinePriv *priv;
+
+  g_return_val_if_fail (GTK_IS_TIMELINE (timeline), 0.);
+
+  priv = GTK_TIMELINE_GET_PRIV (timeline);
+  return priv->progress;
 }
 
 gdouble

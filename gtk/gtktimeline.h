@@ -22,8 +22,8 @@
 #define __GTK_TIMELINE_H__
 
 #include <glib-object.h>
-#include <gtk/gtkwidget.h>
 #include <gtk/gtkenums.h>
+#include <gdk/gdk.h>
 
 G_BEGIN_DECLS
 
@@ -91,6 +91,8 @@ void                  gtk_timeline_set_screen          (GtkTimeline             
 GtkTimelineDirection  gtk_timeline_get_direction       (GtkTimeline              *timeline);
 void                  gtk_timeline_set_direction       (GtkTimeline              *timeline,
                                                         GtkTimelineDirection      direction);
+
+gdouble               gtk_timeline_get_progress        (GtkTimeline              *timeline);
 
 gdouble               gtk_timeline_calculate_progress  (gdouble                   linear_progress,
                                                         GtkTimelineProgressType   progress_type);
