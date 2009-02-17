@@ -544,34 +544,52 @@ gtk_style_context_get_placing_context (GtkStyleContext *context)
   return placing;
 }
 
-void
-gtk_style_context_set_color (GtkStyleContext *context,
-                             const GdkColor  *color)
+static gchar *
+get_color_key (const gchar    *prefix,
+               GtkWidgetState  state)
+{
+  static GFlagsClass *flags_class = NULL;
+  GFlagsValue *value;
+
+  if (state == 0)
+    return g_strdup_printf ("%s-color", prefix);
+
+  if (G_UNLIKELY (!flags_class))
+    {
+      GType type;
+
+      type = GTK_TYPE_WIDGET_STATE;
+      flags_class = G_FLAGS_CLASS (g_type_class_ref (type));
+    }
+
+  value = g_flags_get_first_value (flags_class, state);
+
+  return g_strdup_printf ("%s-%s-color", prefix, value->value_name);
+}
+
+static void
+_gtk_style_context_set_color (GtkStyleContext *context,
+                              const gchar     *key,
+                              const GdkColor  *color)
 {
   GValue value = { 0 };
-
-  /* FIXME: Obviously there's not going to be just one color */
-
-  g_return_if_fail (GTK_IS_STYLE_CONTEXT (context));
-  g_return_if_fail (color != NULL);
 
   g_value_init (&value, GDK_TYPE_COLOR);
   g_value_set_boxed (&value, color);
 
-  gtk_style_context_set_param (context, "color", &value);
+  gtk_style_context_set_param (context, key, &value);
   g_value_unset (&value);
 }
 
-gboolean
-gtk_style_context_get_color (GtkStyleContext *context,
-                             GdkColor        *color)
+static gboolean
+_gtk_style_context_get_color (GtkStyleContext *context,
+                              const gchar     *key,
+                              GdkColor        *color)
 {
   GValue value = { 0 };
   GdkColor *c;
 
-  g_return_val_if_fail (GTK_IS_STYLE_CONTEXT (context), FALSE);
-
-  if (!gtk_style_context_get_param (context, "color", &value))
+  if (!gtk_style_context_get_param (context, key, &value))
     return FALSE;
 
   c = g_value_get_boxed (&value);
@@ -582,6 +600,138 @@ gtk_style_context_get_color (GtkStyleContext *context,
   g_value_unset (&value);
 
   return TRUE;
+}
+
+void
+gtk_style_context_set_fg_color (GtkStyleContext *context,
+                                GtkWidgetState   state,
+                                const GdkColor  *color)
+{
+  gchar *key;
+
+  g_return_if_fail (GTK_IS_STYLE_CONTEXT (context));
+  g_return_if_fail (color != NULL);
+
+  key = get_color_key ("fg", state);
+  _gtk_style_context_set_color (context, key, color);
+  g_free (key);
+}
+
+gboolean
+gtk_style_context_get_fg_color (GtkStyleContext *context,
+                                GtkWidgetState   state,
+                                GdkColor        *color)
+{
+  gboolean retval;
+  gchar *key;
+
+  g_return_val_if_fail (GTK_IS_STYLE_CONTEXT (context), FALSE);
+  g_return_val_if_fail (color != NULL, FALSE);
+
+  key = get_color_key ("fg", state);
+  retval = _gtk_style_context_get_color (context, key, color);
+  g_free (key);
+
+  return retval;
+}
+
+void
+gtk_style_context_set_bg_color (GtkStyleContext *context,
+                                GtkWidgetState   state,
+                                const GdkColor  *color)
+{
+  gchar *key;
+
+  g_return_if_fail (GTK_IS_STYLE_CONTEXT (context));
+  g_return_if_fail (color != NULL);
+
+  key = get_color_key ("bg", state);
+  _gtk_style_context_set_color (context, key, color);
+  g_free (key);
+}
+
+gboolean
+gtk_style_context_get_bg_color (GtkStyleContext *context,
+                                GtkWidgetState   state,
+                                GdkColor        *color)
+{
+  gboolean retval;
+  gchar *key;
+
+  g_return_val_if_fail (GTK_IS_STYLE_CONTEXT (context), FALSE);
+  g_return_val_if_fail (color != NULL, FALSE);
+
+  key = get_color_key ("bg", state);
+  retval = _gtk_style_context_get_color (context, key, color);
+  g_free (key);
+
+  return retval;
+}
+
+void
+gtk_style_context_set_text_color (GtkStyleContext *context,
+                                  GtkWidgetState   state,
+                                  const GdkColor  *color)
+{
+  gchar *key;
+
+  g_return_if_fail (GTK_IS_STYLE_CONTEXT (context));
+  g_return_if_fail (color != NULL);
+
+  key = get_color_key ("text", state);
+  _gtk_style_context_set_color (context, key, color);
+  g_free (key);
+}
+
+gboolean
+gtk_style_context_get_text_color (GtkStyleContext *context,
+                                  GtkWidgetState   state,
+                                  GdkColor        *color)
+{
+  gboolean retval;
+  gchar *key;
+
+  g_return_val_if_fail (GTK_IS_STYLE_CONTEXT (context), FALSE);
+  g_return_val_if_fail (color != NULL, FALSE);
+
+  key = get_color_key ("text", state);
+  retval = _gtk_style_context_get_color (context, key, color);
+  g_free (key);
+
+  return retval;
+}
+
+void
+gtk_style_context_set_base_color (GtkStyleContext *context,
+                                  GtkWidgetState   state,
+                                  const GdkColor  *color)
+{
+  gchar *key;
+
+  g_return_if_fail (GTK_IS_STYLE_CONTEXT (context));
+  g_return_if_fail (color != NULL);
+
+  key = get_color_key ("base", state);
+  _gtk_style_context_set_color (context, key, color);
+  g_free (key);
+}
+
+gboolean
+gtk_style_context_get_base_color (GtkStyleContext *context,
+                                  GtkWidgetState   state,
+                                  GdkColor        *color)
+{
+  gboolean retval;
+  gchar *key;
+
+  g_return_val_if_fail (GTK_IS_STYLE_CONTEXT (context), FALSE);
+  g_return_val_if_fail (color != NULL, FALSE);
+
+  key = get_color_key ("base", state);
+  retval = _gtk_style_context_get_color (context, key, color);
+  g_free (key);
+
+  return retval;
 }
 
 static GtkTimeline *
@@ -605,7 +755,6 @@ gtk_style_context_paint_box (GtkStyleContext *context,
                              gint             height)
 {
   GtkPlacingContext placing;
-  GdkColor color;
   gint radius;
   gdouble progress;
 
@@ -613,19 +762,27 @@ gtk_style_context_paint_box (GtkStyleContext *context,
   placing = gtk_style_context_get_placing_context (context);
 
   if (gtk_style_context_get_state_progress (context, GTK_WIDGET_STATE_PRELIGHT, &progress))
-    cairo_set_source_rgb (cr, progress, progress, progress);
+    {
+      GdkColor normal_color, prelight_color;
+      GdkColor dest = { 0 };
+
+      gtk_style_context_get_bg_color (context, 0, &normal_color);
+      gtk_style_context_get_bg_color (context, GTK_WIDGET_STATE_PRELIGHT, &prelight_color);
+
+      dest.red = normal_color.red + (prelight_color.red - normal_color.red) * progress;
+      dest.green = normal_color.green + (prelight_color.green - normal_color.green) * progress;
+      dest.blue = normal_color.blue + (prelight_color.blue - normal_color.blue) * progress;
+
+      gdk_cairo_set_source_color (cr, &dest);
+    }
   else
     {
       GtkWidgetState state;
+      GdkColor color;
 
       state = gtk_style_context_get_state (context);
-
-      if (gtk_style_context_get_color (context, &color))
-        gdk_cairo_set_source_color (cr, &color);
-      else if (state & GTK_WIDGET_STATE_PRELIGHT)
-        cairo_set_source_rgb (cr, 1., 1., 1.);
-      else
-        cairo_set_source_rgb (cr, 0.5, 0.5, 0.5);
+      gtk_style_context_get_bg_color (context, state, &color);
+      gdk_cairo_set_source_color (cr, &color);
     }
 
   if (radius == 0)

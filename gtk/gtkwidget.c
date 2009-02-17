@@ -5728,6 +5728,10 @@ gtk_widget_ensure_style_context (GtkWidget *widget)
       g_object_set_qdata_full (G_OBJECT (widget),
                                quark_style_context, context,
                                (GDestroyNotify) g_object_unref);
+
+      /* Set up some parameters at the moment from GtkStyle */
+      gtk_style_context_set_bg_color (context, 0, &widget->style->bg[GTK_STATE_NORMAL]);
+      gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_PRELIGHT, &widget->style->bg[GTK_STATE_PRELIGHT]);
     }
 }
 

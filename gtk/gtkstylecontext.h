@@ -130,9 +130,33 @@ void      gtk_style_context_set_placing_context (GtkStyleContext     *context,
 GtkPlacingContext
           gtk_style_context_get_placing_context (GtkStyleContext     *context);
 
-void      gtk_style_context_set_color           (GtkStyleContext     *context,
+/* Colors */
+void      gtk_style_context_set_fg_color        (GtkStyleContext     *context,
+                                                 GtkWidgetState       state,
                                                  const GdkColor      *color);
-gboolean  gtk_style_context_get_color           (GtkStyleContext     *context,
+gboolean  gtk_style_context_get_fg_color        (GtkStyleContext     *context,
+                                                 GtkWidgetState       state,
+                                                 GdkColor            *color);
+
+void      gtk_style_context_set_bg_color        (GtkStyleContext     *context,
+                                                 GtkWidgetState       state,
+                                                 const GdkColor      *color);
+gboolean  gtk_style_context_get_bg_color        (GtkStyleContext     *context,
+                                                 GtkWidgetState       state,
+                                                 GdkColor            *color);
+
+void      gtk_style_context_set_text_color      (GtkStyleContext     *context,
+                                                 GtkWidgetState       state,
+                                                 const GdkColor      *color);
+gboolean  gtk_style_context_get_text_color      (GtkStyleContext     *context,
+                                                 GtkWidgetState       state,
+                                                 GdkColor            *color);
+
+void      gtk_style_context_set_base_color      (GtkStyleContext     *context,
+                                                 GtkWidgetState       state,
+                                                 const GdkColor      *color);
+gboolean  gtk_style_context_get_base_color      (GtkStyleContext     *context,
+                                                 GtkWidgetState       state,
                                                  GdkColor            *color);
 
 /* animation functions */
