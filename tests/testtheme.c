@@ -15,9 +15,7 @@ on_expose_event (GtkWidget      *widget,
   cairo_t *cr;
 
   cr = gdk_cairo_create (widget->window);
-
-  /* Ideally the widget will provide a context */
-  context = g_object_new (GTK_TYPE_STYLE_CONTEXT, NULL);
+  context = gtk_widget_get_style_context (widget);
 
   /* Set radius for box borders */
   gtk_style_context_set_param_int (context, "radius", 15);
@@ -58,7 +56,7 @@ on_expose_event (GtkWidget      *widget,
           if ((r + c) % 2)
             {
               GdkColor color = { 0, 65535, 65535, 65535 };
-              gtk_style_context_set_color (context, &color);
+              gtk_style_context_set_bg_color (context, 0, &color);
             }
 
           /* Paint box, GtkStyleContext will use the placing
@@ -79,7 +77,6 @@ on_expose_event (GtkWidget      *widget,
       x = BORDER;
     }
 
-  g_object_unref (context);
   cairo_destroy (cr);
 
   return TRUE;
