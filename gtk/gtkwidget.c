@@ -5732,6 +5732,12 @@ gtk_widget_ensure_style_context (GtkWidget *widget)
       /* Set up some parameters at the moment from GtkStyle */
       gtk_style_context_set_bg_color (context, 0, &widget->style->bg[GTK_STATE_NORMAL]);
       gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_PRELIGHT, &widget->style->bg[GTK_STATE_PRELIGHT]);
+      gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_ACTIVE, &widget->style->bg[GTK_STATE_ACTIVE]);
+      gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_SELECTED, &widget->style->bg[GTK_STATE_SELECTED]);
+      gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_INSENSITIVE, &widget->style->bg[GTK_STATE_INSENSITIVE]);
+
+      /* And some others out of the blue */
+      /* gtk_style_context_set_param_int (context, "radius", 5); */
     }
 }
 
