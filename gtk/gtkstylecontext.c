@@ -625,7 +625,7 @@ gtk_style_context_paint_box (GtkStyleContext *context,
       else if (state & GTK_WIDGET_STATE_PRELIGHT)
         cairo_set_source_rgb (cr, 1., 1., 1.);
       else
-        cairo_set_source_rgb (cr, 0., 0., 0.);
+        cairo_set_source_rgb (cr, 0.5, 0.5, 0.5);
     }
 
   if (radius == 0)
