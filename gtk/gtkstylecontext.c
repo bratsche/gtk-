@@ -252,11 +252,11 @@ gtk_style_context_set_param (GtkStyleContext *context,
       g_value_copy (value, copy);
     }
 
-  /* Insert in current context, replacing key */
-  g_hash_table_replace (GET_CURRENT_CONTEXT (priv), str, copy);
+  /* Insert first in composed context */
+  g_hash_table_replace (priv->composed_context, str, copy);
 
-  /* And in composed context */
-  g_hash_table_insert (priv->composed_context, str, copy);
+  /* And then in current context */
+  g_hash_table_replace (GET_CURRENT_CONTEXT (priv), str, copy);
 }
 
 gboolean
@@ -265,7 +265,7 @@ gtk_style_context_get_param (GtkStyleContext *context,
                              GValue          *value)
 {
   GtkStyleContextPrivate *priv;
-  GValue *val;
+  const GValue *val;
 
   g_return_val_if_fail (GTK_IS_STYLE_CONTEXT (context), FALSE);
   g_return_val_if_fail (param != NULL, FALSE);
