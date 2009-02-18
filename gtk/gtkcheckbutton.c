@@ -430,8 +430,7 @@ gtk_real_check_button_draw_indicator (GtkCheckButton *check_button,
 #endif
         }
 
-      gtk_depict_check (context, cr,
-                        x, y, indicator_size, indicator_size);
+      gtk_depict_check (context, cr, x, y, indicator_size);
 
 #if 0
       gtk_paint_check (widget->style, widget->window,

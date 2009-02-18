@@ -67,8 +67,7 @@ static void gtk_style_context_paint_check (GtkStyleContext *context,
                                            cairo_t         *cr,
                                            gint             x,
                                            gint             y,
-                                           gint             width,
-                                           gint             height);
+                                           gint             size);
 
 G_DEFINE_TYPE (GtkStyleContext, gtk_style_context, G_TYPE_OBJECT)
 
@@ -863,8 +862,7 @@ gtk_style_context_paint_check (GtkStyleContext *context,
                                cairo_t         *cr,
                                gint             x,
                                gint             y,
-                               gint             width,
-                               gint             height)
+                               gint             size)
 {
   GdkColor bg_color;
   gdouble progress;
@@ -876,8 +874,8 @@ gtk_style_context_paint_check (GtkStyleContext *context,
   cairo_rectangle (cr,
                    (gdouble) x + 0.5,
                    (gdouble) y + 0.5,
-                   (gdouble) width - 1,
-                   (gdouble) height - 1);
+                   (gdouble) size - 1,
+                   (gdouble) size - 1);
 
   cairo_fill_preserve (cr);
   cairo_set_source_rgb (cr, 0., 0., 0.);
@@ -890,17 +888,16 @@ gtk_style_context_paint_check (GtkStyleContext *context,
       cairo_set_source_rgb (cr, 0., 0., 0.);
 
       cairo_translate (cr,
-                       x + width / 2,
-                       y + height / 2);
+                       x + size / 2,
+                       y + size / 2);
 
-      width -= 2;
-      height -= 2;
+      size -= 2;
 
       cairo_rectangle (cr,
-                       (- ((width / 2)) + 0.5) * progress,
-                       (- ((height / 2)) + 0.5) * progress,
-                       (width - 1) * progress,
-                       (height - 1) * progress);
+                       (- ((size / 2)) + 0.5) * progress,
+                       (- ((size / 2)) + 0.5) * progress,
+                       (size - 1) * progress,
+                       (size - 1) * progress);
       cairo_fill (cr);
 
       cairo_restore (cr);
@@ -918,17 +915,16 @@ gtk_style_context_paint_check (GtkStyleContext *context,
           cairo_set_source_rgb (cr, 0., 0., 0.);
 
           cairo_translate (cr,
-                           x + width / 2,
-                           y + height / 2);
+                           x + size / 2,
+                           y + size / 2);
 
-          width -= 2;
-          height -= 2;
+          size -= 2;
 
           cairo_rectangle (cr,
-                           - (width / 2) + 0.5,
-                           - (height / 2) + 0.5,
-                           width - 1,
-                           height - 1);
+                           - (size / 2) + 0.5,
+                           - (size / 2) + 0.5,
+                           size - 1,
+                           size - 1);
           cairo_fill (cr);
 
           cairo_restore (cr);
@@ -1138,13 +1134,12 @@ gtk_depict_check (GtkStyleContext *context,
                   cairo_t         *cr,
                   gint             x,
                   gint             y,
-                  gint             width,
-                  gint             height)
+                  gint             size)
 {
   g_return_if_fail (GTK_IS_STYLE_CONTEXT (context));
   g_return_if_fail (cr != NULL);
 
-  GTK_STYLE_CONTEXT_GET_CLASS (context)->paint_check (context, cr, x, y, width, height);
+  GTK_STYLE_CONTEXT_GET_CLASS (context)->paint_check (context, cr, x, y, size);
 }
 
 

@@ -74,8 +74,7 @@ struct GtkStyleContextClass
                         cairo_t         *cr,
                         gint             x,
                         gint             y,
-                        gint             width,
-                        gint             height);
+                        gint             size);
 };
 
 
@@ -190,8 +189,7 @@ void      gtk_depict_check                      (GtkStyleContext *context,
                                                  cairo_t         *cr,
                                                  gint             x,
                                                  gint             y,
-                                                 gint             width,
-                                                 gint             height);
+                                                 gint             size);
 
 G_END_DECLS
 
