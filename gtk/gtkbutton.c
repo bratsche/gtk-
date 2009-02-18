@@ -1441,6 +1441,7 @@ _gtk_button_paint (GtkButton          *button,
 		   const gchar        *main_detail,
 		   const gchar        *default_detail)
 {
+  GtkStyleContext *context;
   GtkWidget *widget;
   gint width, height;
   gint x, y;
@@ -1450,11 +1451,14 @@ _gtk_button_paint (GtkButton          *button,
   gboolean interior_focus;
   gint focus_width;
   gint focus_pad;
+  cairo_t *cr;
    
   if (GTK_WIDGET_DRAWABLE (button))
     {
       widget = GTK_WIDGET (button);
       border_width = GTK_CONTAINER (widget)->border_width;
+      context = gtk_widget_get_style_context (widget);
+      cr = gdk_cairo_create (widget->window);
 
       gtk_button_get_props (button, &default_border, &default_outside_border, NULL, &interior_focus);
       gtk_widget_style_get (GTK_WIDGET (widget),
@@ -1498,11 +1502,15 @@ _gtk_button_paint (GtkButton          *button,
 
       if (button->relief != GTK_RELIEF_NONE || button->depressed ||
 	  GTK_WIDGET_STATE(widget) == GTK_STATE_PRELIGHT)
+        gtk_depict_box (context, cr,
+                        x, y, width, height);
+#if 0
 	gtk_paint_box (widget->style, widget->window,
 		       state_type,
 		       shadow_type, area, widget, "button",
 		       x, y, width, height);
-       
+#endif
+
       if (GTK_WIDGET_HAS_FOCUS (widget))
 	{
 	  gint child_displacement_x;
@@ -1540,6 +1548,8 @@ _gtk_button_paint (GtkButton          *button,
 			   area, widget, "button",
 			   x, y, width, height);
 	}
+
+      cairo_destroy (cr);
     }
 }
 
@@ -2057,7 +2067,7 @@ static void
 gtk_button_update_state (GtkButton *button)
 {
   gboolean depressed;
-  GtkStateType new_state;
+  GtkWidgetState new_state = 0;
 
   if (button->activate_timeout)
     depressed = button->depress_on_activate;
@@ -2065,12 +2075,13 @@ gtk_button_update_state (GtkButton *button)
     depressed = button->in_button && button->button_down;
 
   if (button->in_button && (!button->button_down || !depressed))
-    new_state = GTK_STATE_PRELIGHT;
-  else
-    new_state = depressed ? GTK_STATE_ACTIVE : GTK_STATE_NORMAL;
+    new_state |= GTK_WIDGET_STATE_PRELIGHT;
 
-  _gtk_button_set_depressed (button, depressed); 
-  gtk_widget_set_state (GTK_WIDGET (button), new_state);
+  if (depressed)
+    new_state |= GTK_WIDGET_STATE_ACTIVE;
+
+  _gtk_button_set_depressed (button, depressed);
+  gtk_widget_set_state_flags (GTK_WIDGET (button), new_state);
 }
 
 static void 
