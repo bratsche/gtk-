@@ -63,6 +63,12 @@ static void gtk_style_context_paint_box (GtkStyleContext *context,
                                          gint             y,
                                          gint             width,
                                          gint             height);
+static void gtk_style_context_paint_check (GtkStyleContext *context,
+                                           cairo_t         *cr,
+                                           gint             x,
+                                           gint             y,
+                                           gint             width,
+                                           gint             height);
 
 G_DEFINE_TYPE (GtkStyleContext, gtk_style_context, G_TYPE_OBJECT)
 
@@ -75,6 +81,7 @@ gtk_style_context_class_init (GtkStyleContextClass *klass)
 
   klass->create_animation = gtk_style_context_create_animation;
   klass->paint_box = gtk_style_context_paint_box;
+  klass->paint_check = gtk_style_context_paint_check;
 
   g_type_class_add_private (klass, sizeof (GtkStyleContextPrivate));
 }
@@ -851,6 +858,84 @@ gtk_style_context_paint_box (GtkStyleContext *context,
     }
 }
 
+static void
+gtk_style_context_paint_check (GtkStyleContext *context,
+                               cairo_t         *cr,
+                               gint             x,
+                               gint             y,
+                               gint             width,
+                               gint             height)
+{
+  GdkColor bg_color;
+  gdouble progress;
+
+  cairo_set_line_width (cr, 0.5);
+  gtk_style_context_get_bg_color (context, 0, &bg_color);
+  gdk_cairo_set_source_color (cr, &bg_color);
+
+  cairo_rectangle (cr,
+                   (gdouble) x + 0.5,
+                   (gdouble) y + 0.5,
+                   (gdouble) width - 1,
+                   (gdouble) height - 1);
+
+  cairo_fill_preserve (cr);
+  cairo_set_source_rgb (cr, 0., 0., 0.);
+  cairo_stroke (cr);
+
+  if (gtk_style_context_get_state_progress (context, GTK_WIDGET_STATE_ACTIVE, &progress))
+    {
+      cairo_save (cr);
+
+      cairo_set_source_rgb (cr, 0., 0., 0.);
+
+      cairo_translate (cr,
+                       x + width / 2,
+                       y + height / 2);
+
+      width -= 2;
+      height -= 2;
+
+      cairo_rectangle (cr,
+                       (- ((width / 2)) + 0.5) * progress,
+                       (- ((height / 2)) + 0.5) * progress,
+                       (width - 1) * progress,
+                       (height - 1) * progress);
+      cairo_fill (cr);
+
+      cairo_restore (cr);
+    }
+  else
+    {
+      GtkWidgetState state;
+
+      state = gtk_style_context_get_state (context);
+
+      if (state & GTK_WIDGET_STATE_ACTIVE)
+        {
+          cairo_save (cr);
+
+          cairo_set_source_rgb (cr, 0., 0., 0.);
+
+          cairo_translate (cr,
+                           x + width / 2,
+                           y + height / 2);
+
+          width -= 2;
+          height -= 2;
+
+          cairo_rectangle (cr,
+                           - (width / 2) + 0.5,
+                           - (height / 2) + 0.5,
+                           width - 1,
+                           height - 1);
+          cairo_fill (cr);
+
+          cairo_restore (cr);
+        }
+    }
+}
+
 /* Animation functions */
 void
 gtk_style_context_push_activatable_region (GtkStyleContext *context,
@@ -1046,6 +1131,20 @@ gtk_depict_box (GtkStyleContext *context,
   g_return_if_fail (cr != NULL);
 
   GTK_STYLE_CONTEXT_GET_CLASS (context)->paint_box (context, cr, x, y, width, height);
+}
+
+void
+gtk_depict_check (GtkStyleContext *context,
+                  cairo_t         *cr,
+                  gint             x,
+                  gint             y,
+                  gint             width,
+                  gint             height)
+{
+  g_return_if_fail (GTK_IS_STYLE_CONTEXT (context));
+  g_return_if_fail (cr != NULL);
+
+  GTK_STYLE_CONTEXT_GET_CLASS (context)->paint_check (context, cr, x, y, width, height);
 }
 
 
