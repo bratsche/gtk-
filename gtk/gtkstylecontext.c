@@ -492,7 +492,7 @@ gtk_style_context_get_state (GtkStyleContext *context)
 
 void
 gtk_style_context_set_state_flags (GtkStyleContext *context,
-                                  GtkWidgetState   state)
+                                   GtkWidgetState   state)
 {
   GtkWidgetState saved_state;
 
@@ -740,7 +740,7 @@ gtk_style_context_create_animation (GtkStyleContext *context,
 {
   GtkTimeline *timeline;
 
-  timeline = gtk_timeline_new (500);
+  timeline = gtk_timeline_new (250);
 
   return timeline;
 }
@@ -758,6 +758,7 @@ gtk_style_context_paint_box (GtkStyleContext *context,
   gint radius;
   gdouble progress;
 
+  cairo_set_line_width (cr, 0.5);
   radius = gtk_style_context_get_param_int (context, "radius");
   placing = gtk_style_context_get_placing_context (context);
 
@@ -787,12 +788,13 @@ gtk_style_context_paint_box (GtkStyleContext *context,
 
   if (radius == 0)
     cairo_rectangle (cr,
-                     (gdouble) x,
-                     (gdouble) y,
-                     (gdouble) width,
-                     (gdouble) height);
+                     (gdouble) x + 1.5,
+                     (gdouble) y + 1.5,
+                     (gdouble) width - 3,
+                     (gdouble) height - 3);
   else
     {
+      /* FIXME: Shouldn't do subpixel rendering */
       cairo_move_to (cr, x + radius, y);
 
       /* top line and top-right corner */
@@ -844,7 +846,7 @@ gtk_style_context_paint_box (GtkStyleContext *context,
     {
       cairo_fill_preserve (cr);
 
-      cairo_set_source_rgb (cr, 0, 0, 0);
+      cairo_set_source_rgb (cr, 0., 0., 0.);
       cairo_stroke (cr);
     }
 }
@@ -999,14 +1001,24 @@ gtk_style_context_get_state_progress (GtkStyleContext *context,
                                       gdouble         *progress)
 {
   GtkStyleContextPrivate *priv;
+  GtkStyleContextAnimInfo *anim_info;
   GList *regions;
 
   priv = GTK_STYLE_CONTEXT_GET_PRIVATE (context);
 
+  /* NULL is the topmost region, affecting the whole widget */
+  anim_info = _gtk_timeline_context_get_anim_info (context, NULL, state);
+
+  if (anim_info)
+    {
+      if (progress)
+        *progress = gtk_timeline_get_progress (anim_info->timeline);
+
+      return TRUE;
+    }
+
   for (regions = priv->regions_stack; regions; regions = regions->next)
     {
-      GtkStyleContextAnimInfo *anim_info;
-
       anim_info = _gtk_timeline_context_get_anim_info (context, regions->data, state);
 
       if (anim_info)
