@@ -356,12 +356,21 @@ gtk_real_check_button_draw_indicator (GtkCheckButton *check_button,
   gint focus_width;
   gint focus_pad;
   gboolean interior_focus;
+  GtkStyleContext *context;
+  cairo_t *cr;
+  GdkRectangle restrict_area;
+  GdkRectangle new_area;
   
   if (GTK_WIDGET_DRAWABLE (check_button))
     {
       widget = GTK_WIDGET (check_button);
       button = GTK_BUTTON (check_button);
       toggle_button = GTK_TOGGLE_BUTTON (check_button);
+
+      context = gtk_widget_get_style_context (widget);
+      cr = gdk_cairo_create (widget->window);
+
+      gtk_style_context_set_state (context, gtk_widget_get_state_flags (widget));
   
       gtk_widget_style_get (widget, 
 			    "interior-focus", &interior_focus,
@@ -397,30 +406,39 @@ gtk_real_check_button_draw_indicator (GtkCheckButton *check_button,
       if (gtk_widget_get_direction (widget) == GTK_TEXT_DIR_RTL)
 	x = widget->allocation.x + widget->allocation.width - (indicator_size + x - widget->allocation.x);
 
-      if (GTK_WIDGET_STATE (toggle_button) == GTK_STATE_PRELIGHT)
-	{
-	  GdkRectangle restrict_area;
-	  GdkRectangle new_area;
-	      
-	  restrict_area.x = widget->allocation.x + GTK_CONTAINER (widget)->border_width;
-	  restrict_area.y = widget->allocation.y + GTK_CONTAINER (widget)->border_width;
-	  restrict_area.width = widget->allocation.width - (2 * GTK_CONTAINER (widget)->border_width);
-	  restrict_area.height = widget->allocation.height - (2 * GTK_CONTAINER (widget)->border_width);
-	  
-	  if (gdk_rectangle_intersect (area, &restrict_area, &new_area))
-	    {
+      restrict_area.x = widget->allocation.x + GTK_CONTAINER (widget)->border_width;
+      restrict_area.y = widget->allocation.y + GTK_CONTAINER (widget)->border_width;
+      restrict_area.width = widget->allocation.width - (2 * GTK_CONTAINER (widget)->border_width);
+      restrict_area.height = widget->allocation.height - (2 * GTK_CONTAINER (widget)->border_width);
+
+      if (gdk_rectangle_intersect (area, &restrict_area, &new_area))
+        {
+          gtk_style_context_save (context);
+          gtk_style_context_set_param_flag (context, "flat");
+
+          gtk_depict_box (context, cr,
+                          new_area.x, new_area.y,
+                          new_area.width, new_area.height);
+
+          gtk_style_context_restore (context);
+#if 0
 	      gtk_paint_flat_box (widget->style, widget->window, GTK_STATE_PRELIGHT,
 				  GTK_SHADOW_ETCHED_OUT, 
 				  area, widget, "checkbutton",
 				  new_area.x, new_area.y,
 				  new_area.width, new_area.height);
-	    }
-	}
+#endif
+        }
 
+      gtk_depict_check (context, cr,
+                        x, y, indicator_size, indicator_size);
+
+#if 0
       gtk_paint_check (widget->style, widget->window,
 		       state_type, shadow_type,
 		       area, widget, "checkbutton",
 		       x, y, indicator_size, indicator_size);
+#endif
     }
 }
 
