@@ -5436,7 +5436,7 @@ gtk_widget_set_state_flags (GtkWidget      *widget,
           if ((old_state & flag) != (new_state & flag))
             gtk_style_context_modify_state (context, widget, NULL,
                                             flag,
-                                            ((new_state & flag) == TRUE));
+                                            ((new_state & flag) != 0));
 
           flag <<= 1;
         }
@@ -5774,8 +5774,7 @@ gtk_widget_ensure_style_context (GtkWidget *widget)
 
       /* Set up some parameters at the moment from GtkStyle */
       gtk_style_context_set_bg_color (context, 0, &widget->style->bg[GTK_STATE_NORMAL]);
-      //gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_PRELIGHT, &widget->style->bg[GTK_STATE_PRELIGHT]);
-      gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_PRELIGHT, &widget->style->fg[GTK_STATE_NORMAL]);
+      gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_PRELIGHT, &widget->style->bg[GTK_STATE_PRELIGHT]);
       gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_ACTIVE, &widget->style->bg[GTK_STATE_ACTIVE]);
       gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_SELECTED, &widget->style->bg[GTK_STATE_SELECTED]);
       gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_INSENSITIVE, &widget->style->bg[GTK_STATE_INSENSITIVE]);
