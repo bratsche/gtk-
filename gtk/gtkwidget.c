@@ -310,6 +310,7 @@ static GQuark		quark_tooltip_markup = 0;
 static GQuark		quark_has_tooltip = 0;
 static GQuark		quark_tooltip_window = 0;
 static GQuark           quark_style_context = 0;
+static GQuark           quark_widget_state = 0;
 GParamSpecPool         *_gtk_widget_child_property_pool = NULL;
 GObjectNotifyContext   *_gtk_widget_child_property_notify_context = NULL;
 
@@ -399,6 +400,7 @@ gtk_widget_class_init (GtkWidgetClass *klass)
   quark_has_tooltip = g_quark_from_static_string ("gtk-has-tooltip");
   quark_tooltip_window = g_quark_from_static_string ("gtk-tooltip-window");
   quark_style_context = g_quark_from_static_string ("gtk-style-context");
+  quark_widget_state = g_quark_from_static_string ("gtk-widget-state");
 
   style_property_spec_pool = g_param_spec_pool_new (FALSE);
   _gtk_widget_child_property_pool = g_param_spec_pool_new (TRUE);
@@ -5401,6 +5403,47 @@ gtk_widget_set_state (GtkWidget           *widget,
     }
 }
 
+GtkWidgetState
+gtk_widget_get_state_flags (GtkWidget *widget)
+{
+  GtkWidgetState state;
+
+  g_return_val_if_fail (GTK_IS_WIDGET (widget), 0);
+
+  state = GPOINTER_TO_INT (g_object_get_qdata (G_OBJECT (widget), quark_widget_state));
+
+  return state;
+}
+
+void
+gtk_widget_set_state_flags (GtkWidget      *widget,
+                            GtkWidgetState  new_state)
+{
+  GtkWidgetState old_state, flag;
+
+  flag = 1;
+  old_state = GPOINTER_TO_UINT (g_object_get_qdata (G_OBJECT (widget), quark_widget_state));
+
+  if (GTK_WIDGET_DRAWABLE (widget))
+    {
+      GtkStyleContext *context;
+
+      context = gtk_widget_get_style_context (widget);
+      gtk_style_context_set_state (context, new_state);
+
+      while (flag <= GTK_WIDGET_STATE_INSENSITIVE)
+        {
+          if ((old_state & flag) != (new_state & flag))
+            gtk_style_context_modify_state (context, widget, NULL,
+                                            flag,
+                                            ((new_state & flag) == TRUE));
+
+          flag <<= 1;
+        }
+    }
+
+  g_object_set_qdata (G_OBJECT (widget), quark_widget_state, GUINT_TO_POINTER (new_state));
+}
 
 /**
  * gtk_widget_set_app_paintable:
@@ -5731,7 +5774,8 @@ gtk_widget_ensure_style_context (GtkWidget *widget)
 
       /* Set up some parameters at the moment from GtkStyle */
       gtk_style_context_set_bg_color (context, 0, &widget->style->bg[GTK_STATE_NORMAL]);
-      gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_PRELIGHT, &widget->style->bg[GTK_STATE_PRELIGHT]);
+      //gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_PRELIGHT, &widget->style->bg[GTK_STATE_PRELIGHT]);
+      gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_PRELIGHT, &widget->style->fg[GTK_STATE_NORMAL]);
       gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_ACTIVE, &widget->style->bg[GTK_STATE_ACTIVE]);
       gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_SELECTED, &widget->style->bg[GTK_STATE_SELECTED]);
       gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_INSENSITIVE, &widget->style->bg[GTK_STATE_INSENSITIVE]);

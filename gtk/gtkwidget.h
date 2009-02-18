@@ -558,6 +558,11 @@ void                  gtk_widget_set_name               (GtkWidget    *widget,
 G_CONST_RETURN gchar* gtk_widget_get_name               (GtkWidget    *widget);
 void                  gtk_widget_set_state              (GtkWidget    *widget,
 							 GtkStateType  state);
+
+GtkWidgetState        gtk_widget_get_state_flags        (GtkWidget      *widget);
+void                  gtk_widget_set_state_flags        (GtkWidget      *widget,
+                                                         GtkWidgetState  state);
+
 void                  gtk_widget_set_sensitive          (GtkWidget    *widget,
 							 gboolean      sensitive);
 void                  gtk_widget_set_app_paintable      (GtkWidget    *widget,
