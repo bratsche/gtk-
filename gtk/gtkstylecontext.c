@@ -19,7 +19,7 @@
  */
 
 #include <gtk/gtkstylecontext.h>
-#include <gtk/gtktypebuiltins.h>
+#include <gtk/gtk.h>
 #include "gtkwidget.h"
 
 #define GTK_STYLE_CONTEXT_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), GTK_TYPE_STYLE_CONTEXT, GtkStyleContextPrivate))
@@ -761,12 +761,15 @@ gtk_style_context_paint_box (GtkStyleContext *context,
                              gint             height)
 {
   GtkPlacingContext placing;
+  GtkWidgetState state;
+  GType type;
   gint radius;
   gdouble progress;
 
-  cairo_set_line_width (cr, 0.5);
   radius = gtk_style_context_get_param_int (context, "radius");
   placing = gtk_style_context_get_placing_context (context);
+  state = gtk_style_context_get_state (context);
+  type = gtk_style_context_get_gtype (context);
 
   if (gtk_style_context_get_state_progress (context, GTK_WIDGET_STATE_PRELIGHT, &progress))
     {
@@ -784,13 +787,16 @@ gtk_style_context_paint_box (GtkStyleContext *context,
     }
   else
     {
-      GtkWidgetState state;
       GdkColor color;
 
-      state = gtk_style_context_get_state (context);
+      if (g_type_is_a (type, GTK_TYPE_CHECK_BUTTON) && (state & GTK_WIDGET_STATE_PRELIGHT) == 0)
+        return;
+
       gtk_style_context_get_bg_color (context, state, &color);
       gdk_cairo_set_source_color (cr, &color);
     }
+
+  cairo_set_line_width (cr, 0.5);
 
   if (radius == 0)
     cairo_rectangle (cr,

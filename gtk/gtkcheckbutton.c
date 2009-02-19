@@ -415,6 +415,7 @@ gtk_real_check_button_draw_indicator (GtkCheckButton *check_button,
         {
           gtk_style_context_save (context);
           gtk_style_context_set_param_flag (context, "flat");
+          gtk_style_context_unset_state_flags (context, GTK_WIDGET_STATE_ACTIVE);
 
           gtk_depict_box (context, cr,
                           new_area.x, new_area.y,
