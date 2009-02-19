@@ -5780,6 +5780,7 @@ gtk_widget_ensure_style_context (GtkWidget *widget)
       gtk_style_context_set_bg_color (context, GTK_WIDGET_STATE_INSENSITIVE, &widget->style->bg[GTK_STATE_INSENSITIVE]);
 
       /* And some others out of the blue */
+      gtk_style_context_set_gtype (context, G_OBJECT_TYPE (widget));
       /* gtk_style_context_set_param_int (context, "radius", 5); */
     }
 }
