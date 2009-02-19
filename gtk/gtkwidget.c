@@ -5781,7 +5781,7 @@ gtk_widget_ensure_style_context (GtkWidget *widget)
 
       /* And some others out of the blue */
       gtk_style_context_set_gtype (context, G_OBJECT_TYPE (widget));
-      /* gtk_style_context_set_param_int (context, "radius", 5); */
+      gtk_style_context_set_param_int (context, "radius", 7);
     }
 }
 
