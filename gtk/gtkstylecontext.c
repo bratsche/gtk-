@@ -798,15 +798,15 @@ gtk_style_context_paint_box (GtkStyleContext *context,
 
   cairo_set_line_width (cr, 0.5);
 
+  x += 0.5;
+  y += 0.5;
+  width -= 1;
+  height -= 1;
+
   if (radius == 0)
-    cairo_rectangle (cr,
-                     (gdouble) x + 1.5,
-                     (gdouble) y + 1.5,
-                     (gdouble) width - 3,
-                     (gdouble) height - 3);
+    cairo_rectangle (cr, x, y, width, height);
   else
     {
-      /* FIXME: Shouldn't do subpixel rendering */
       cairo_move_to (cr, x + radius, y);
 
       /* top line and top-right corner */
