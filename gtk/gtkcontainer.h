@@ -94,6 +94,9 @@ struct _GtkContainerClass
 				 guint            property_id,
 				 GValue          *value,
 				 GParamSpec      *pspec);
+  void    (*modify_child_style_context) (GtkContainer    *container,
+                                         GtkWidget       *child,
+                                         GtkStyleContext *context);
 
   /* Padding for future expansion */
   void (*_gtk_reserved1) (void);

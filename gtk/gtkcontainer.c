@@ -231,6 +231,7 @@ gtk_container_class_init (GtkContainerClass *class)
   class->set_focus_child = gtk_container_real_set_focus_child;
   class->child_type = NULL;
   class->composite_name = gtk_container_child_default_composite_name;
+  class->modify_child_style_context = NULL;
 
   g_object_class_install_property (gobject_class,
                                    PROP_RESIZE_MODE,
@@ -2611,14 +2612,27 @@ static void
 gtk_container_expose_child (GtkWidget *child,
 			    gpointer   client_data)
 {
+  GtkStyleContext *child_context = NULL;
   struct {
     GtkWidget *container;
+    GtkContainerClass *class;
     GdkEventExpose *event;
   } *data = client_data;
   
+
+  if (data->class->modify_child_style_context)
+    {
+      child_context = gtk_widget_get_style_context (child);
+      gtk_style_context_save (child_context);
+      (data->class->modify_child_style_context) (GTK_CONTAINER (data->container), child, child_context);
+    }
+
   gtk_container_propagate_expose (GTK_CONTAINER (data->container),
 				  child,
 				  data->event);
+
+  if (child_context)
+    gtk_style_context_restore (child_context);
 }
 
 static gint 
@@ -2627,6 +2641,7 @@ gtk_container_expose (GtkWidget      *widget,
 {
   struct {
     GtkWidget *container;
+    GtkContainerClass *class;
     GdkEventExpose *event;
   } data;
 
@@ -2637,6 +2652,7 @@ gtk_container_expose (GtkWidget      *widget,
   if (GTK_WIDGET_DRAWABLE (widget)) 
     {
       data.container = widget;
+      data.class = GTK_CONTAINER_GET_CLASS (widget);
       data.event = event;
       
       gtk_container_forall (GTK_CONTAINER (widget),
