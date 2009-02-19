@@ -96,6 +96,9 @@ static void gtk_path_bar_forall                   (GtkContainer     *container,
 						   gboolean          include_internals,
 						   GtkCallback       callback,
 						   gpointer          callback_data);
+static void gtk_path_bar_modify_child_style_context (GtkContainer    *container,
+                                                     GtkWidget       *child,
+                                                     GtkStyleContext *child_context);
 static gboolean gtk_path_bar_scroll               (GtkWidget        *widget,
 						   GdkEventScroll   *event);
 static void gtk_path_bar_scroll_up                (GtkPathBar       *path_bar);
@@ -230,6 +233,7 @@ gtk_path_bar_class_init (GtkPathBarClass *path_bar_class)
   container_class->add = gtk_path_bar_add;
   container_class->forall = gtk_path_bar_forall;
   container_class->remove = gtk_path_bar_remove;
+  container_class->modify_child_style_context = gtk_path_bar_modify_child_style_context;
   /* FIXME: */
   /*  container_class->child_type = gtk_path_bar_child_type;*/
 
@@ -768,6 +772,31 @@ gtk_path_bar_forall (GtkContainer *container,
 
   if (path_bar->down_slider_button)
     (* callback) (path_bar->down_slider_button, callback_data);
+}
+
+static void
+gtk_path_bar_modify_child_style_context (GtkContainer    *container,
+                                         GtkWidget       *child,
+                                         GtkStyleContext *child_context)
+{
+  GtkPathBar *path_bar;
+
+  path_bar = GTK_PATH_BAR (container);
+
+  if (child == path_bar->down_slider_button)
+    return;
+
+  if (child == path_bar->up_slider_button)
+    gtk_style_context_set_placing_context (child_context, GTK_PLACING_CONNECTS_RIGHT);
+  else if (path_bar->button_list)
+    {
+      if (child == BUTTON_DATA (g_list_last (path_bar->button_list)->data)->button)
+        gtk_style_context_set_placing_context (child_context, GTK_PLACING_CONNECTS_RIGHT);
+      else if (child == BUTTON_DATA (path_bar->button_list->data)->button)
+        gtk_style_context_set_placing_context (child_context, GTK_PLACING_CONNECTS_LEFT);
+      else
+        gtk_style_context_set_placing_context (child_context, GTK_PLACING_CONNECTS_LEFT | GTK_PLACING_CONNECTS_RIGHT);
+    }
 }
 
 static void
