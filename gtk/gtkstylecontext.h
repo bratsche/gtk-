@@ -66,15 +66,15 @@ struct GtkStyleContextClass
 
   void (* paint_box) (GtkStyleContext *context,
                       cairo_t         *cr,
-                      gint             x,
-                      gint             y,
-                      gint             width,
-                      gint             height);
+                      gdouble          x,
+                      gdouble          y,
+                      gdouble          width,
+                      gdouble          height);
   void (* paint_check) (GtkStyleContext *context,
                         cairo_t         *cr,
-                        gint             x,
-                        gint             y,
-                        gint             size);
+                        gdouble          x,
+                        gdouble          y,
+                        gdouble          size);
 };
 
 
@@ -181,15 +181,15 @@ gboolean  gtk_style_context_get_state_progress      (GtkStyleContext     *contex
 /* Paint functions */
 void      gtk_depict_box                        (GtkStyleContext *context,
                                                  cairo_t         *cr,
-                                                 gint             x,
-                                                 gint             y,
-                                                 gint             width,
-                                                 gint             height);
+                                                 gdouble          x,
+                                                 gdouble          y,
+                                                 gdouble          width,
+                                                 gdouble          height);
 void      gtk_depict_check                      (GtkStyleContext *context,
                                                  cairo_t         *cr,
-                                                 gint             x,
-                                                 gint             y,
-                                                 gint             size);
+                                                 gdouble          x,
+                                                 gdouble          y,
+                                                 gdouble          size);
 
 G_END_DECLS
 

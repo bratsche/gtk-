@@ -59,15 +59,15 @@ static GtkTimeline * gtk_style_context_create_animation (GtkStyleContext *contex
 
 static void gtk_style_context_paint_box (GtkStyleContext *context,
                                          cairo_t         *cr,
-                                         gint             x,
-                                         gint             y,
-                                         gint             width,
-                                         gint             height);
+                                         gdouble          x,
+                                         gdouble          y,
+                                         gdouble          width,
+                                         gdouble          height);
 static void gtk_style_context_paint_check (GtkStyleContext *context,
                                            cairo_t         *cr,
-                                           gint             x,
-                                           gint             y,
-                                           gint             size);
+                                           gdouble          x,
+                                           gdouble          y,
+                                           gdouble          size);
 
 G_DEFINE_TYPE (GtkStyleContext, gtk_style_context, G_TYPE_OBJECT)
 
@@ -755,10 +755,10 @@ gtk_style_context_create_animation (GtkStyleContext *context,
 static void
 gtk_style_context_paint_box (GtkStyleContext *context,
                              cairo_t         *cr,
-                             gint             x,
-                             gint             y,
-                             gint             width,
-                             gint             height)
+                             gdouble          x,
+                             gdouble          y,
+                             gdouble          width,
+                             gdouble          height)
 {
   GtkPlacingContext placing;
   GtkWidgetState state;
@@ -866,9 +866,9 @@ gtk_style_context_paint_box (GtkStyleContext *context,
 static void
 gtk_style_context_paint_check (GtkStyleContext *context,
                                cairo_t         *cr,
-                               gint             x,
-                               gint             y,
-                               gint             size)
+                               gdouble          x,
+                               gdouble          y,
+                               gdouble          size)
 {
   GdkColor bg_color;
   gdouble progress;
@@ -1124,10 +1124,10 @@ gtk_style_context_get_state_progress (GtkStyleContext *context,
 void
 gtk_depict_box (GtkStyleContext *context,
                 cairo_t         *cr,
-                gint             x,
-                gint             y,
-                gint             width,
-                gint             height)
+                gdouble          x,
+                gdouble          y,
+                gdouble          width,
+                gdouble          height)
 {
   g_return_if_fail (GTK_IS_STYLE_CONTEXT (context));
   g_return_if_fail (cr != NULL);
@@ -1138,9 +1138,9 @@ gtk_depict_box (GtkStyleContext *context,
 void
 gtk_depict_check (GtkStyleContext *context,
                   cairo_t         *cr,
-                  gint             x,
-                  gint             y,
-                  gint             size)
+                  gdouble          x,
+                  gdouble          y,
+                  gdouble          size)
 {
   g_return_if_fail (GTK_IS_STYLE_CONTEXT (context));
   g_return_if_fail (cr != NULL);

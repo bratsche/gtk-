@@ -350,7 +350,7 @@ gtk_real_check_button_draw_indicator (GtkCheckButton *check_button,
   GtkToggleButton *toggle_button;
   GtkStateType state_type;
   GtkShadowType shadow_type;
-  gint x, y;
+  gdouble x, y;
   gint indicator_size;
   gint indicator_spacing;
   gint focus_width;
@@ -418,8 +418,10 @@ gtk_real_check_button_draw_indicator (GtkCheckButton *check_button,
           gtk_style_context_unset_state_flags (context, GTK_WIDGET_STATE_ACTIVE);
 
           gtk_depict_box (context, cr,
-                          new_area.x, new_area.y,
-                          new_area.width, new_area.height);
+                          (gdouble) new_area.x,
+                          (gdouble) new_area.y,
+                          (gdouble) new_area.width,
+                          (gdouble) new_area.height);
 
           gtk_style_context_restore (context);
 #if 0
@@ -431,7 +433,8 @@ gtk_real_check_button_draw_indicator (GtkCheckButton *check_button,
 #endif
         }
 
-      gtk_depict_check (context, cr, x, y, indicator_size);
+      gtk_depict_check (context, cr, x, y,
+                        (gdouble) indicator_size);
 
 #if 0
       gtk_paint_check (widget->style, widget->window,

@@ -1443,8 +1443,8 @@ _gtk_button_paint (GtkButton          *button,
 {
   GtkStyleContext *context;
   GtkWidget *widget;
-  gint width, height;
-  gint x, y;
+  gdouble width, height;
+  gdouble x, y;
   gint border_width;
   GtkBorder default_border;
   GtkBorder default_outside_border;
