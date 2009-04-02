@@ -1505,8 +1505,7 @@ gtk_main_do_event (GdkEvent *event)
        *  then we send the event to the original event widget.
        *  This is the key to implementing modality.
        */
-      if (GTK_WIDGET_IS_SENSITIVE (event_widget) &&
-	  gtk_widget_is_ancestor (event_widget, grab_widget))
+      if (gtk_widget_is_ancestor (event_widget, grab_widget))
 	grab_widget = event_widget;
     }
   else
