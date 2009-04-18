@@ -575,6 +575,8 @@ void                  gtk_widget_set_child_visible      (GtkWidget    *widget,
 							 gboolean      is_visible);
 gboolean              gtk_widget_get_child_visible      (GtkWidget    *widget);
 GdkWindow*            gtk_widget_get_window             (GtkWidget    *widget);
+void                  gtk_widget_get_allocation         (GtkWidget    *widget,
+							 GtkAllocation *allocation);
 
 gboolean   gtk_widget_child_focus         (GtkWidget           *widget,
                                            GtkDirectionType     direction);

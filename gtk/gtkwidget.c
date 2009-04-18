@@ -10337,5 +10337,21 @@ gtk_widget_get_window (GtkWidget *widget)
   return widget->window;
 }
 
+/**
+ * gtk_widget_get_allocation:
+ * @widget: a #GtkWidget
+ *
+ * Obtains the widget's allocation.
+ */
+void
+gtk_widget_get_allocation (GtkWidget *widget,
+			   GtkAllocation *allocation)
+{
+  g_return_if_fail (GTK_IS_WIDGET (widget));
+  g_return_if_fail (allocation != NULL);
+
+  *allocation = widget->allocation;
+}
+
 #define __GTK_WIDGET_C__
 #include "gtkaliasdef.c"
