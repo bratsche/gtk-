@@ -1980,7 +1980,11 @@ extern "C" {
 #ifndef GSEAL
 /* introduce GSEAL() here for all of Gdk and Gtk+ without the need to modify GLib */
 #  ifdef GSEAL_ENABLE
-#    define GSEAL(ident)      _g_sealed__ ## ident
+#    ifdef GSEAL_NO_ERRORS
+#      define GSEAL(ident)      G_GNUC_DEPRECATED ident
+#    else
+#      define GSEAL(ident)      _g_sealed__ ## ident
+#    endif
 #  else
 #    define GSEAL(ident)      ident
 #  endif
