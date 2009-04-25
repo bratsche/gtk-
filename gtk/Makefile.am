@@ -947,6 +947,11 @@ files:
 	  echo $$p; \
 	done
 
+rewrite:
+	for src in ${gtk_c_sources}; do \
+		clang-cc -rewrite-gtk $(DEFS) $(INCLUDES) -DGTK_ENABLE_BROKEN $${src}; \
+	done
+
 STOCK_ICONS = \
 	stock-icons/16/document-open-recent.png		\
 	stock-icons/16/gtk-about.png  			\
