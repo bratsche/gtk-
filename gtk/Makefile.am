@@ -949,7 +949,7 @@ files:
 
 rewrite:
 	for src in ${gtk_c_sources}; do \
-		clang-cc -rewrite-gtk $(DEFS) $(INCLUDES) -DGTK_ENABLE_BROKEN $${src}; \
+		clang-cc -rewrite-gtk $(DEFS) $(INCLUDES) -DGTK_ENABLE_BROKEN $${src} -o $${src}.rewrite; cp $${src}.rewrite $${src}; \
 	done
 
 STOCK_ICONS = \
