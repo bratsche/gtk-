@@ -1,25 +1,5 @@
-/* simple.c
- * Copyright (C) 1997  Red Hat, Inc
- * Author: Elliot Lee
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Library General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Library General Public License for more details.
- *
- * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
- */
 #include "config.h"
 #include <gtk/gtk.h>
-
 
 void
 hello (void)
@@ -31,12 +11,12 @@ int
 main (int argc, char *argv[])
 {
   GtkWidget *window;
+  GtkWidget *vbox;
+  GtkWidget *label;
   GtkWidget *button;
 
-  /* FIXME: This is not allowable - what is this supposed to be? */
-  /*  gdk_progclass = g_strdup ("XTerm"); */
   gtk_init (&argc, &argv);
-  
+
   window = g_object_connect (g_object_new (gtk_window_get_type (),
 					     "user_data", NULL,
 					     "type", GTK_WINDOW_TOPLEVEL,
@@ -47,14 +27,23 @@ main (int argc, char *argv[])
 					     NULL),
 			     "signal::destroy", gtk_main_quit, NULL,
 			     NULL);
+  vbox = gtk_vbox_new (FALSE, 5);
+  gtk_container_add (GTK_CONTAINER (window), vbox);
+
+  label = gtk_label_new ("There's a lady who's sure\n"
+                         "All that glitters is gold\n"
+                         "And she's buying a stairway to Heaven.");
+  gtk_box_pack_start (GTK_BOX (vbox), label, FALSE, FALSE, 0);
+
   button = g_object_connect (g_object_new (gtk_button_get_type (),
-					     "GtkButton::label", "hello world",
-					     "GtkWidget::parent", window,
+					     "GtkButton::label", "Stairway",
 					     "GtkWidget::visible", TRUE,
 					     NULL),
 			     "signal::clicked", hello, NULL,
 			     NULL);
-  gtk_widget_show (window);
+  gtk_box_pack_start (GTK_BOX (vbox), button, FALSE, FALSE, 0);
+
+  gtk_widget_show_all (window);
 
   gtk_main ();
 
