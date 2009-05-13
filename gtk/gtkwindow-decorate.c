@@ -498,9 +498,11 @@ gtk_decorated_window_button_press (GtkWidget       *widget,
     case GTK_WINDOW_REGION_TITLE:
       if (!deco->maximized && event->button == 1)
 	{
-	  deco->last_x = x;
-	  deco->last_y = y;
-	  deco->moving = TRUE;
+          gtk_window_begin_move_drag (window,
+                                      event->button,
+                                      event->x_root,
+                                      event->y_root,
+                                      event->time);
 	}
       break;
     case GTK_WINDOW_REGION_MAXIMIZE:
