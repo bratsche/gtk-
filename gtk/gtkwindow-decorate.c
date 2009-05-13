@@ -641,6 +641,7 @@ gtk_decorated_window_paint (GtkWidget    *widget,
   GtkWindowDecoration *deco = get_decoration (window);
   gint x1, y1, x2, y2;
   GtkStateType border_state;
+  GdkRectangle rect;
 
   if (deco->decorated)
     {
@@ -662,7 +663,15 @@ gtk_decorated_window_paint (GtkWidget    *widget,
                             "decoration-button-y-offset", &y_offset,
                             NULL);
 
-#if 0
+      height += border_top + border_bottom;
+      width += border_left + border_right;
+
+      rect.x = area->x - border_left;
+      rect.y = area->y - border_top;
+      rect.width = area->width + border_left + border_right;
+      rect.height = area->height + border_top + border_bottom;
+
+#if 1
       /* XXX - what is this for? */
 
       /* Top */
@@ -698,8 +707,8 @@ gtk_decorated_window_paint (GtkWidget    *widget,
           cairo_pattern_t *gradient;
           cairo_t *cr;
           const int hmargin = 2, vmargin = 2, radius = 5;
-          const int width = widget->allocation.width;
-          const int height = widget->allocation.height;
+          const int width = widget->allocation.width + border_left + border_right;
+          const int height = widget->allocation.height + border_top + border_bottom;
 
           cr = gdk_cairo_create (frame);
           cairo_set_operator (cr, CAIRO_OPERATOR_CLEAR);
