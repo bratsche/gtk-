@@ -803,19 +803,19 @@ gtk_window_class_init (GtkWindowClass *klass)
                                            g_param_spec_int ("decoration-border-left",
                                                              P_("Left border decoration size"),
                                                              P_("Left border decoration size"),
-                                                             0, G_MAXINT, 3, GTK_PARAM_READWRITE));
+                                                             0, G_MAXINT, 6, GTK_PARAM_READWRITE));
 
   gtk_widget_class_install_style_property (widget_class,
                                            g_param_spec_int ("decoration-border-right",
                                                              P_("Right border decoration size"),
                                                              P_("Right border decoration size"),
-                                                             0, G_MAXINT, 3, GTK_PARAM_READWRITE));
+                                                             0, G_MAXINT, 6, GTK_PARAM_READWRITE));
 
   gtk_widget_class_install_style_property (widget_class,
                                            g_param_spec_int ("decoration-border-bottom",
                                                              P_("Bottom border decoration size"),
                                                              P_("Bottom border decoration size"),
-                                                             0, G_MAXINT, 3, GTK_PARAM_READWRITE));
+                                                             0, G_MAXINT, 6, GTK_PARAM_READWRITE));
 
   gtk_widget_class_install_style_property (widget_class,
                                            g_param_spec_int ("decoration-button-size",
