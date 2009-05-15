@@ -26,6 +26,8 @@
 #include "config.h"
 #include "gtkprivate.h"
 #include "gtkwindow.h"
+#include "gtkhbox.h"
+#include "gtkbutton.h"
 #include "gtkmain.h"
 #include "gtkwindow-decorate.h"
 #include "gtkintl.h"
@@ -79,6 +81,11 @@ struct _GtkWindowDecoration
 
   GtkWindowResizeType resize;
 
+  GtkWidget *hbox;
+  GtkWidget *close_button;
+  GtkWidget *max_button;
+  GtkWidget *min_button;
+
   guint minimizing : 1;
   guint moving : 1;
   guint closing : 1;
@@ -121,6 +128,8 @@ gtk_decoration_free (GtkWindowDecoration *deco)
   deco->regions = NULL;
   deco->n_regions = 0;
 
+  g_object_unref (deco->hbox);
+
   g_free (deco);
 }
 
@@ -146,9 +155,16 @@ gtk_decorated_window_init (GtkWindow   *window)
   deco->round_corners = TRUE;
   deco->radius = 5;
 
+  deco->close_button = gtk_button_new_from_stock ("stock-smiley-26");
+  deco->hbox = gtk_hbox_new (FALSE, 0);
+  gtk_box_pack_start (GTK_BOX (deco->hbox), deco->close_button, FALSE, FALSE, 0);
+  gtk_widget_show_all (deco->hbox);
+  gtk_widget_set_parent_window (deco->hbox, window->frame);
+  gtk_widget_set_parent (deco->hbox, GTK_WIDGET (window));
+
   g_object_set_data_full (G_OBJECT (window), I_("gtk-window-decoration"), deco,
 			  (GDestroyNotify) gtk_decoration_free);
-  
+
   gtk_window_set_has_frame (window, TRUE);
 
   g_signal_connect (window,
@@ -179,12 +195,28 @@ get_decoration (GtkWindow *window)
   return (GtkWindowDecoration *)g_object_get_data (G_OBJECT (window), "gtk-window-decoration");
 }
 
+GtkWidget *
+gtk_decorated_window_get_box (GtkWindow *window)
+{
+  GtkWindowDecoration *deco;
+
+  g_return_val_if_fail (GTK_IS_WINDOW (window), NULL);
+
+  deco = get_decoration (window);
+
+  return deco->hbox;
+}
+
 void
 gtk_decorated_window_set_title (GtkWindow   *window,
 				const gchar *title)
 {
-  GtkWindowDecoration *deco = get_decoration (window);
-  
+  GtkWindowDecoration *deco;
+
+  g_return_val_if_fail (GTK_IS_WINDOW (window), NULL);
+
+  deco = get_decoration (window);
+
   if (deco->title_layout)
     pango_layout_set_text (deco->title_layout, title, -1);
 }
@@ -292,7 +324,7 @@ gtk_decorated_window_inner_get_pos (GdkWindow *win,
   GtkWindow *window = (GtkWindow *)user_data;
 
   gdk_window_get_position (window->frame, x, y);
-  
+
   *x += window->frame_left;
   *y += window->frame_top;
 }
@@ -505,6 +537,7 @@ gtk_decorated_window_button_press (GtkWidget       *widget,
                                       event->time);
 	}
       break;
+#if 0
     case GTK_WINDOW_REGION_MAXIMIZE:
       if (event->button == 1)
 	deco->maximizing = TRUE;
@@ -526,6 +559,7 @@ gtk_decorated_window_button_press (GtkWidget       *widget,
 	  deco->last_y = y;
 	}
       break;
+#endif
     default:
       break;
     }
@@ -757,6 +791,7 @@ gtk_decorated_window_paint (GtkWidget    *widget,
                          height - (border_top + border_bottom) + 3);
         }
 
+#if 0
       if (deco->maximizable)
 	{
 	  /* Maximize button: */
@@ -825,7 +860,9 @@ gtk_decorated_window_paint (GtkWidget    *widget,
 
       if (area)
 	gdk_gc_set_clip_rectangle (widget->style->black_gc, NULL);
+#endif
 
+#if 0
       /* Title */
       if (deco->title_layout)
 	{
@@ -839,6 +876,7 @@ gtk_decorated_window_paint (GtkWidget    *widget,
 	  if (area)
 	    gdk_gc_set_clip_rectangle (widget->style->fg_gc [border_state], NULL);
 	}
+#endif
     }
 }
 
@@ -952,7 +990,7 @@ gtk_decorated_window_move_resize_window (GtkWindow   *window,
 {
   GtkWidget *widget = GTK_WIDGET (window);
   GtkWindowDecoration *deco = get_decoration (window);
-  
+
   deco->real_inner_move = TRUE;
   gdk_window_move_resize (widget->window,
 			  x, y, width, height);

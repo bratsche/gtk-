@@ -5024,17 +5024,18 @@ gtk_window_size_request (GtkWidget      *widget,
 {
   GtkWindow *window;
   GtkBin *bin;
+  GtkWidget *decorated_hbox;
+  GtkRequisition child_requisition;
 
   window = GTK_WINDOW (widget);
   bin = GTK_BIN (window);
-  
+  decorated_hbox = gtk_decorated_window_get_box (window);
+
   requisition->width = GTK_CONTAINER (window)->border_width * 2;
   requisition->height = GTK_CONTAINER (window)->border_width * 2;
 
   if (bin->child && GTK_WIDGET_VISIBLE (bin->child))
     {
-      GtkRequisition child_requisition;
-      
       gtk_widget_size_request (bin->child, &child_requisition);
 
       requisition->width += child_requisition.width;
@@ -5048,9 +5049,14 @@ gtk_window_size_allocate (GtkWidget     *widget,
 {
   GtkWindow *window;
   GtkAllocation child_allocation;
+  GtkAllocation new_allocation;
+  GtkWidget *decorated_hbox = NULL;
+  GtkWindowPrivate *priv;
 
   window = GTK_WINDOW (widget);
   widget->allocation = *allocation;
+  priv = GTK_WINDOW_GET_PRIVATE (window);
+  decorated_hbox = gtk_decorated_window_get_box (window);
 
   if (window->bin.child && GTK_WIDGET_VISIBLE (window->bin.child))
     {
@@ -5062,6 +5068,25 @@ gtk_window_size_allocate (GtkWidget     *widget,
 	MAX (1, (gint)allocation->height - child_allocation.y * 2);
 
       gtk_widget_size_allocate (window->bin.child, &child_allocation);
+    }
+
+  if (decorated_hbox && priv->client_side_decorations)
+    {
+      GtkRequisition deco_requisition;
+      GtkAllocation deco_allocation;
+
+      gtk_widget_size_request (decorated_hbox, &deco_requisition);
+
+      deco_allocation.x = 0;
+      deco_allocation.y = 0;
+      deco_allocation.width = deco_requisition.width;
+      deco_allocation.height = deco_requisition.height;
+
+      g_print ("deco x: %d, y: %d, width: %d, height: %d\n",
+               deco_allocation.x, deco_allocation.y,
+               deco_allocation.width, deco_allocation.width);
+
+      gtk_widget_size_allocate (decorated_hbox, &deco_allocation);
     }
 
   if (GTK_WIDGET_REALIZED (widget) && window->frame)
@@ -6715,9 +6740,19 @@ static gint
 gtk_window_expose (GtkWidget      *widget,
 		   GdkEventExpose *event)
 {
+  GtkWindowPrivate *priv = GTK_WINDOW_GET_PRIVATE (widget);
+  GtkWidget *hbox = gtk_decorated_window_get_box (GTK_WINDOW (widget));
+
   if (!GTK_WIDGET_APP_PAINTABLE (widget))
     gtk_window_paint (widget, &event->area);
-  
+
+  if (hbox && priv->client_side_decorations)
+    {
+      gtk_container_propagate_expose (GTK_CONTAINER (widget),
+                                      hbox,
+                                      event);
+    }
+
   if (GTK_WIDGET_CLASS (gtk_window_parent_class)->expose_event)
     return GTK_WIDGET_CLASS (gtk_window_parent_class)->expose_event (widget, event);
 
