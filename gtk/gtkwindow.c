@@ -6927,13 +6927,6 @@ gtk_window_expose (GtkWidget      *widget,
   if (!GTK_WIDGET_APP_PAINTABLE (widget))
     gtk_window_paint (widget, &event->area);
 
-  if (priv->title_label && priv->client_side_decorated)
-    {
-      gtk_container_propagate_expose (GTK_CONTAINER (widget),
-                                      priv->title_label,
-                                      event);
-    }
-
   if (GTK_WIDGET_CLASS (gtk_window_parent_class)->expose_event)
     return GTK_WIDGET_CLASS (gtk_window_parent_class)->expose_event (widget, event);
 
