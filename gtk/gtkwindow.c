@@ -1426,7 +1426,6 @@ gtk_window_set_label_widget (GtkWindow *window,
                              GtkWidget *label)
 {
   GtkWindowPrivate *priv = GTK_WINDOW_GET_PRIVATE (window);
-  gboolean need_resize = FALSE;
 
   g_return_if_fail (GTK_IS_WINDOW (window));
   g_return_if_fail (label == NULL || GTK_IS_WIDGET (label));
@@ -1437,19 +1436,20 @@ gtk_window_set_label_widget (GtkWindow *window,
 
   if (priv->title_label)
     {
-      need_resize = GTK_WIDGET_VISIBLE (priv->title_label);
       gtk_widget_unparent (priv->title_label);
     }
 
+  g_print (" .. setting priv->title_label = label\n");
   priv->title_label = label;
 
   if (label)
     {
+      priv->title_label = label;
+
       gtk_widget_set_parent (label, GTK_WIDGET (window));
-      need_resize |= GTK_WIDGET_VISIBLE (label);
     }
 
-  if (GTK_WIDGET_VISIBLE (window) && need_resize)
+  if (GTK_WIDGET_VISIBLE (window))
     {
       gtk_widget_queue_resize (GTK_WIDGET (window));
     }
@@ -1485,16 +1485,17 @@ gtk_window_set_title (GtkWindow   *window,
   g_free (window->title);
   window->title = new_title;
 
-  if (!priv->title_label)
+  if (!title)
     {
-      g_print ("create label widget (%s)...\n", window->title);
-      GtkWidget *label = gtk_label_new (window->title);
-      gtk_widget_show (label);
-      gtk_window_set_label_widget (window, label);
+      gtk_window_set_label_widget (window, NULL);
     }
   else
     {
-      gtk_label_set_text (GTK_LABEL (priv->title_label), window->title);
+      GtkWidget *child = gtk_label_new (title);
+
+      g_print (" ...... creating GtkLabel for %s\n", title);
+      gtk_widget_show (child);
+      gtk_window_set_label_widget (window, child);
     }
 
   if (GTK_WIDGET_VISIBLE (priv->title_label) && GTK_WIDGET_VISIBLE (GTK_WIDGET (window)))
@@ -4727,6 +4728,14 @@ gtk_window_map (GtkWidget *widget)
       !GTK_WIDGET_MAPPED (window->bin.child))
     gtk_widget_map (window->bin.child);
 
+  if (priv->title_label &&
+      GTK_WIDGET_VISIBLE (priv->title_label) &&
+      !GTK_WIDGET_MAPPED (priv->title_label))
+    {
+      g_print ("gtk_widget_map title_label\n");
+      gtk_widget_map (priv->title_label);
+    }
+
   if (window->frame)
     toplevel = window->frame;
   else
@@ -4772,9 +4781,6 @@ gtk_window_map (GtkWidget *widget)
     }
 
   gdk_window_show (widget->window);
-
-  if (window->frame)
-    gdk_window_show (window->frame);
 
   if (!disable_startup_notification)
     {
@@ -4862,9 +4868,6 @@ gtk_window_realize (GtkWidget *widget)
   
   window = GTK_WINDOW (widget);
   priv = GTK_WINDOW_GET_PRIVATE (window);
-
-  priv->title_label = gtk_label_new (window->title);
-  gtk_widget_set_parent (priv->title_label, widget);
 
   /* ensure widget tree is properly size allocated */
   if (widget->allocation.x == -1 &&
@@ -5115,7 +5118,7 @@ gtk_window_size_request (GtkWidget      *widget,
   requisition->width = GTK_CONTAINER (window)->border_width * 2;
   requisition->height = GTK_CONTAINER (window)->border_width * 2;
 
-  if (priv->client_side_decorated && window->type != GTK_WINDOW_POPUP)
+  if (priv->client_side_decorated && window->type != GTK_WINDOW_POPUP && priv->title_label)
     {
       gtk_widget_size_request (priv->title_label, &child_requisition);
 
@@ -5189,7 +5192,7 @@ gtk_window_size_allocate (GtkWidget     *widget,
 
       g_print ("deco x: %d, y: %d, width: %d, height: %d\n",
                deco_allocation.x, deco_allocation.y,
-               deco_allocation.width, deco_allocation.width);
+               deco_allocation.width, deco_allocation.height);
 
       gtk_widget_size_allocate (priv->title_label, &deco_allocation);
     }
