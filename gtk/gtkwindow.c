@@ -203,9 +203,9 @@ struct _GtkWindowPrivate
   guint opacity_set : 1;
   guint builder_visible : 1;
 
-  gboolean client_side_decorated;
   GdkWMDecoration client_side_decorations;
   GdkWMDecoration old_decorations;
+  gboolean        disable_client_side_decorations;
 
   GdkWindowTypeHint type_hint;
 
@@ -1016,9 +1016,9 @@ gtk_window_init (GtkWindow *window)
   priv->type_hint = GDK_WINDOW_TYPE_HINT_NORMAL;
   priv->opacity = 1.0;
   priv->startup_id = NULL;
-  priv->client_side_decorated = TRUE;
   gtk_window_set_client_side_decorations (window, GDK_DECOR_BORDER | GDK_DECOR_TITLE | GDK_DECOR_MAXIMIZE);
   priv->old_decorations = 0;
+  priv->disable_client_side_decorations = FALSE;
 
   label = gtk_label_new ("");
   gtk_widget_show (label);
@@ -3167,6 +3167,29 @@ gtk_window_get_decorated (GtkWindow *window)
   return window->decorated;
 }
 
+/**
+ * gtk_window_disable_client_side_decorations:
+ * @window: a #GtkWindow
+ *
+ * Disables client-side window decorations for the given window.
+ * This is intended to be used by subclasses of GtkWindow that
+ * need to always disable client-side decorations, for example
+ * GtkPlug.  Normally client-side decorations should be
+ * controlled through GtkWindow's client-side-decorated style
+ * property.
+ **/
+void
+gtk_window_disable_client_side_decorations (GtkWindow *window)
+{
+  GtkWindowPrivate *priv;
+
+  g_return_if_fail (GTK_IS_WINDOW (window));
+
+  priv = GTK_WINDOW_GET_PRIVATE (window);
+
+  priv->disable_client_side_decorations = TRUE;
+}
+
 void
 gtk_window_set_client_side_decorations (GtkWindow       *window,
                                         GdkWMDecoration  setting)
@@ -4986,15 +5009,18 @@ gtk_window_unmap (GtkWidget *widget)
 static gboolean
 is_client_side_decorated (GtkWindow *window)
 {
+  GtkWindowPrivate *priv;
   gboolean client_side_decorated;
+
+  priv = GTK_WINDOW_GET_PRIVATE (window);
 
   gtk_widget_style_get (GTK_WIDGET (window),
                         "client-side-decorated", &client_side_decorated,
                         NULL);
 
-  return 1 && window->decorated; // XXX - remove this :)
+  return 1 && window->decorated && !priv->disable_client_side_decorations; // XXX - remove this :)
 
-  return client_side_decorated && window->decorated;
+  return client_side_decorated && window->decorated && !priv->disable_client_side_decorations;
 }
 
 static void
@@ -5605,7 +5631,6 @@ static gboolean
 gtk_window_button_press_event (GtkWidget      *widget,
                                GdkEventButton *event)
 {
-  GtkWindowPrivate *priv = GTK_WINDOW_GET_PRIVATE (widget);
   gint x = event->x;
   gint y = event->y;
 
@@ -7176,8 +7201,6 @@ static void
 gtk_window_paint (GtkWidget     *widget,
 		  GdkRectangle *area)
 {
-  GtkWindowPrivate *priv = GTK_WINDOW_GET_PRIVATE (widget);
-
 #if 0
   if (is_client_side_decorated (GTK_WINDOW (widget)))
     {
