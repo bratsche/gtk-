@@ -1,5 +1,5 @@
 #include <gtk/gtk.h>
-#include <X11/Xlib.h>
+//#include <X11/Xlib.h>
 
 static GtkWidget *darea;
 static GtkTreeStore *window_store = NULL;

@@ -191,6 +191,37 @@ _gdk_win32_adjust_client_rect (GdkWindow *window,
   API_CALL (AdjustWindowRectEx, (rect, style, FALSE, exstyle));
 }
 
+static gint
+gdk_window_win32_get_root_coords (GdkWindow *window,
+                                  gint       x,
+                                  gint       y,
+                                  gint      *root_x,
+                                  gint      *root_y)
+{                               
+  gint return_val;              
+  POINT pt;
+
+  pt.x = x;
+  pt.y = y;
+  
+  if (!GDK_WINDOW_DESTROYED (window))
+    {
+      return_val = ClientToScreen (GDK_WINDOW_HWND (window),
+                                   &pt);
+    }
+  else
+    {
+      return_val = 0;                       
+    }
+
+  if (root_x)
+    *root_x = pt.x;
+  if (root_y) 
+    *root_y = pt.y;
+    
+  return return_val;
+} 
+
 static GdkColormap*
 gdk_window_impl_win32_get_colormap (GdkDrawable *drawable)
 {
@@ -2374,11 +2405,10 @@ gdk_window_get_frame_extents (GdkWindow    *window,
 }
 
 GdkWindow*
-_gdk_windowing_window_get_pointer (GdkDisplay      *display,
-				   GdkWindow       *window,
-				   gint            *x,
-				   gint            *y,
-				   GdkModifierType *mask)
+_gdk_window_win32_get_pointer (GdkWindow       *window,
+                               gint            *x,
+                               gint            *y,
+                               GdkModifierType *mask)
 {
   GdkWindow *return_val;
   POINT screen_point, point;
@@ -2454,7 +2484,7 @@ _gdk_windowing_get_pointer (GdkDisplay       *display,
   g_return_if_fail (display == _gdk_display);
   
   *screen = _gdk_screen;
-  _gdk_windowing_window_get_pointer (_gdk_display, _gdk_root, x, y, mask);
+  _gdk_window_win32_get_pointer (_gdk_root, x, y, mask);
 }
 
 void
@@ -3706,7 +3736,7 @@ gdk_window_configure_finished (GdkWindow *window)
 }
 
 void
-gdk_window_beep (GdkWindow *window)
+_gdk_windowing_window_beep (GdkWindow *window)
 {
   gdk_display_beep (_gdk_display);
 }
@@ -3847,8 +3877,9 @@ gdk_window_impl_iface_init (GdkWindowImplIface *iface)
   iface->set_back_pixmap = gdk_win32_window_set_back_pixmap;
   iface->reparent = gdk_win32_window_reparent;
   iface->set_cursor = gdk_win32_window_set_cursor;
+  iface->get_pointer = _gdk_window_win32_get_pointer;
   iface->get_geometry = gdk_win32_window_get_geometry;
-  iface->get_origin = gdk_win32_window_get_origin;
+  iface->get_root_coords = gdk_window_win32_get_root_coords;
   iface->shape_combine_region = gdk_win32_window_shape_combine_region;
   iface->input_shape_combine_region = gdk_win32_input_shape_combine_region;
   iface->get_deskrelative_origin = gdk_win32_window_get_deskrelative_origin;

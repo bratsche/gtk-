@@ -99,7 +99,6 @@ static gboolean is_modally_blocked (GdkWindow   *window);
 /* Private variable declarations
  */
 
-#if 0
 static GdkWindow *p_grab_window = NULL; /* Window that currently holds
 					 * the pointer grab
 					 */
@@ -109,7 +108,6 @@ static GdkWindow *p_grab_confine_to = NULL;
 static GdkWindow *k_grab_window = NULL; /* Window the holds the
 					 * keyboard grab
 					 */
-#endif
 
 static GList *client_filters;	/* Filters for client messages */
 
@@ -477,6 +475,19 @@ event_mask_string (GdkEventMask mask)
 }
 
 GdkGrabStatus
+_gdk_windowing_pointer_grab (GdkWindow *window,
+                             GdkWindow *native,
+                             gboolean owner_events,
+                             GdkEventMask event_mask,
+                             GdkWindow *confine_to,
+                             GdkCursor *cursor,
+                             guint32 time)
+{
+  return GDK_GRAB_SUCCESS;
+}
+
+#if 0
+GdkGrabStatus
 gdk_pointer_grab (GdkWindow    *window,
 		  gboolean	owner_events,
 		  GdkEventMask	event_mask,
@@ -509,6 +520,7 @@ gdk_pointer_grab (GdkWindow    *window,
 
   return GDK_GRAB_SUCCESS;
 }
+#endif
 
 void
 gdk_display_pointer_ungrab (GdkDisplay *display,
