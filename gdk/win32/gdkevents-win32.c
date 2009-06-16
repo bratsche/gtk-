@@ -158,6 +158,70 @@ assign_object (gpointer lhsp,
 }
 
 static void
+print_widget_name_for_window (GdkWindow *window)
+{
+  GObject *object = NULL;
+  gint x, y, w, h;
+
+  gdk_window_get_geometry (window, &x, &y, &w, &h, NULL);
+
+  gdk_window_get_user_data (window, &object);
+  if (object)
+    g_print ("   %s (%d, %d @ %dx%d\n", g_type_name_from_instance (object) ?
+             g_type_name_from_instance (object) : "no widget",
+             x, y, w, h);
+}
+
+static GdkWindow*
+find_window_at_position (GdkWindow *window,
+                         gint x,
+                         gint y)
+{
+  GList *children = NULL;
+  GdkWindow *child = NULL;
+  gint width, height;
+  gint cx, cy;
+
+  //gdk_window_get_geometry (window, &cx, &cy, &width, &height, NULL);
+  //g_print ("find (%d, %d) in (%d, %d, %d, %d)\n", x, y, cx, cy, width, height);
+
+
+  //g_print ("find_window_at_position: ");
+  //print_widget_name_for_window (window);
+
+  if (GDK_WINDOW_OBJECT (window)->children)
+    {
+      GList *childs = GDK_WINDOW_OBJECT (window)->children;
+      for (childs; childs != NULL; childs = childs->next)
+        {
+          print_widget_name_for_window (childs->data);
+
+          gdk_window_get_geometry (childs->data, &cx, &cy, &width, &height, NULL);
+
+          if (x >= cx && cy >= 0 && x < (cx + width) && y < (cy + height))
+            {
+              g_print ("FOUND:  ");
+              print_widget_name_for_window (childs->data);
+              return childs->data;
+            }
+
+#if 0
+          if (GDK_WINDOW_OBJECT (childs->data)->children)
+            {
+              return find_window_at_position (childs->data, x, y);
+            }
+          else
+            {
+              return childs->data;
+            }
+#endif
+        }
+    }
+
+  return window;
+}
+
+static void
 track_mouse_event (DWORD dwFlags,
 		   HWND  hwnd)
 {
@@ -575,7 +639,7 @@ find_real_window_for_grabbed_mouse_event (GdkWindow* reported_window,
   return other_window;
 }
 
-static GdkWindow* 
+static GdkWindow*
 find_window_for_mouse_event (GdkWindow* reported_window,
 			     MSG*       msg)
 {
@@ -2492,8 +2556,27 @@ gdk_event_translate (MSG  *msg,
 		g_print (" (%d,%d)",
 			 GET_X_LPARAM (msg->lParam), GET_Y_LPARAM (msg->lParam)));
 
-      assign_object (&window, find_window_for_mouse_event (window, msg));
+      point.x = GET_X_LPARAM (msg->lParam);
+      point.y = GET_Y_LPARAM (msg->lParam);
 
+      if ((hwnd = WindowFromPoint (point)) == NULL)
+        break;
+
+      //ScreenToClient (hwnd, &point);
+
+      if ((new_window = gdk_win32_handle_table_lookup ((GdkNativeWindow) hwnd)) == NULL)
+        break;
+
+      new_window = find_window_at_position (new_window,
+                                            point.x,
+                                            point.y);
+
+      //assign_object (&window, find_window_for_mouse_event (window, msg));
+
+      if (new_window != window)
+        assign_object (&window, new_window);
+
+#if 0
       grab = _gdk_display_get_last_pointer_grab (_gdk_display);
       if (grab)
 	{
@@ -2518,9 +2601,12 @@ gdk_event_translate (MSG  *msg,
 	      synthesize_crossing_events (window, GDK_CROSSING_NORMAL, msg);
 	    }
 	}
+#endif
 
+#if 0
       if (!propagate (&window, msg, grab_window, grab_owner_events, grab_mask,
 		      doesnt_want_button_press, TRUE))
+#endif
 	break;
 
       if (GDK_WINDOW_DESTROYED (window))
@@ -2570,8 +2656,25 @@ gdk_event_translate (MSG  *msg,
 		g_print (" (%d,%d)",
 			 GET_X_LPARAM (msg->lParam), GET_Y_LPARAM (msg->lParam)));
 
-      assign_object (&window, find_window_for_mouse_event (window, msg));
+      point.x = GET_X_LPARAM (msg->lParam);
+      point.y = GET_Y_LPARAM (msg->lParam);
 
+      if ((hwnd = WindowFromPoint (point)) == NULL)
+        break;
+
+      if ((new_window = gdk_win32_handle_table_lookup ((GdkNativeWindow) hwnd)) == NULL)
+        break;
+
+      new_window = find_window_at_position (new_window,
+                                            point.x,
+                                            point.y);
+
+      //assign_object (&window, find_window_for_mouse_event (window, msg));
+
+      if (new_window != window)
+        assign_object (&window, new_window);
+
+#if 0
       grab = _gdk_display_get_last_pointer_grab (_gdk_display);
       if (grab != NULL)
 	{
@@ -2592,6 +2695,7 @@ gdk_event_translate (MSG  *msg,
 	  if (window != current_window)
 	    synthesize_crossing_events (window, GDK_CROSSING_NORMAL, msg);
 	}
+#endif
 
 #if 0
       if (((GdkWindowObject *) window)->extension_events != 0 &&
@@ -2627,6 +2731,9 @@ gdk_event_translate (MSG  *msg,
 			 (gpointer) msg->wParam,
 			 GET_X_LPARAM (msg->lParam), GET_Y_LPARAM (msg->lParam)));
 
+      point.x = GET_X_LPARAM (msg->lParam);
+      point.y = GET_Y_LPARAM (msg->lParam);
+
       /* If we haven't moved, don't create any GDK event. Windows
        * sends WM_MOUSEMOVE messages after a new window is shows under
        * the mouse, even if the mouse hasn't moved. This disturbs gtk.
@@ -2638,8 +2745,22 @@ gdk_event_translate (MSG  *msg,
       current_root_x = msg->pt.x + _gdk_offset_x;
       current_root_y = msg->pt.y + _gdk_offset_y;
 
-      assign_object (&window, find_window_for_mouse_event (window, msg));
+      if ((hwnd = WindowFromPoint (point)) == NULL)
+        break;
 
+      if ((new_window = gdk_win32_handle_table_lookup ((GdkNativeWindow) hwnd)) == NULL)
+        break;
+
+      new_window = find_window_at_position (new_window,
+                                            point.x,
+                                            point.y);
+
+      if (new_window != window)
+        assign_object (&window, new_window);
+
+      //assign_object (&window, find_window_for_mouse_event (window, msg));
+
+#if 0
       if (window != current_window)
 	synthesize_crossing_events (window, GDK_CROSSING_NORMAL, msg);
 
@@ -2680,6 +2801,7 @@ gdk_event_translate (MSG  *msg,
 	      synthesize_crossing_events (window, GDK_CROSSING_NORMAL, msg);
 	    }
 	}
+#endif
 
 #if 0   // XXX - this seems to always block us from creating motion notify events -- Cody
       if (!propagate (&window, msg, grab_window, grab_owner_events, grab_mask,
@@ -2708,6 +2830,8 @@ gdk_event_translate (MSG  *msg,
       event->motion.state = build_pointer_event_state (msg);
       event->motion.is_hint = FALSE;
       event->motion.device = _gdk_display->core_pointer;
+
+      g_print ("motion notify append\n");
 
       append_event (event);
 
@@ -2763,18 +2887,52 @@ gdk_event_translate (MSG  *msg,
       point.x = GET_X_LPARAM (msg->lParam);
       point.y = GET_Y_LPARAM (msg->lParam);
 
+      g_print ("WM_MOUSEWHEEL (%d, %d)\n", point.x, point.y);
+
       if ((hwnd = WindowFromPoint (point)) == NULL)
-	break;
+        {
+          g_print ("WindowFromPoint is NULL, break\n");
+          break;
+        }
 
       msg->hwnd = hwnd;
       if ((new_window = gdk_win32_handle_table_lookup ((GdkNativeWindow) msg->hwnd)) == NULL)
-	break;
+        {
+          g_print ("can't lookup hwnd, break\n");
+          break;
+        }
+      else
+        {
+          g_print (" *** after handle lookup... ");
+          print_widget_name_for_window (new_window);
+          g_print (" ***\n");
+        }
+
+#if 0
+      new_window = _gdk_windowing_window_at_pointer (_gdk_display,
+                                                     point.x,
+                                                     point.y,
+                                                     0);
+#else
+      ScreenToClient (msg->hwnd, &point);
+
+      new_window = find_window_at_position (new_window,
+                                            point.x,
+                                            point.y);
+      if (!new_window)
+        g_print ("DID NOT FIND\n");
+#endif
 
       if (new_window != window)
 	{
+          g_print ("assign_object ()\n");
 	  assign_object (&window, new_window);
 	}
 
+      if (!window)
+        g_print ("DANGER WILL ROBINSON!\n");
+
+#if 0
       grab = _gdk_display_get_last_pointer_grab (_gdk_display);
       if (grab != NULL)
 	{
@@ -2782,18 +2940,24 @@ gdk_event_translate (MSG  *msg,
 	  grab_mask = grab->event_mask;
 	  grab_owner_events = grab->owner_events;
 	}
+#endif
 
+#if 0
       if (!propagate (&window, msg, grab_window,
 		      grab_owner_events,
 		      grab_mask,
 		      doesnt_want_scroll,
 		      TRUE))
-	break;
+        {
+          g_print ("!propagate, break\n");
+          break;
+        }
+#endif
 
       if (GDK_WINDOW_DESTROYED (window))
 	break;
 
-      ScreenToClient (msg->hwnd, &point);
+      g_print ("ScreenToClient(): (%d, %d)\n", point.x, point.y);
 
       event = gdk_event_new (GDK_SCROLL);
       event->scroll.window = window;
