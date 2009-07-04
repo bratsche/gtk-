@@ -1507,6 +1507,7 @@ ensure_title_box (GtkWindow *window)
       gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
       image = gtk_image_new_from_stock (GTK_STOCK_ZOOM_OUT, GTK_ICON_SIZE_MENU);
       gtk_widget_set_tooltip_text (button, _("Minimize Window"));
+      GTK_WIDGET_UNSET_FLAGS (button, GTK_CAN_FOCUS);
       gtk_container_add (GTK_CONTAINER (button), image);
       gtk_box_pack_start (GTK_BOX (hbox), button, TRUE, TRUE, 0);
       priv->min_button = button;
@@ -1517,6 +1518,7 @@ ensure_title_box (GtkWindow *window)
       gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
       image = gtk_image_new_from_stock (GTK_STOCK_ZOOM_IN, GTK_ICON_SIZE_MENU);
       gtk_widget_set_tooltip_text (button, _("Maximize Window"));
+      GTK_WIDGET_UNSET_FLAGS (button, GTK_CAN_FOCUS);
       gtk_container_add (GTK_CONTAINER (button), image);
       gtk_box_pack_start (GTK_BOX (hbox), button, TRUE, TRUE, 0);
       priv->max_button = button;
@@ -1527,6 +1529,7 @@ ensure_title_box (GtkWindow *window)
       gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
       image = gtk_image_new_from_stock (GTK_STOCK_CLOSE, GTK_ICON_SIZE_MENU);
       gtk_widget_set_tooltip_text (button, _("Close Window"));
+      GTK_WIDGET_UNSET_FLAGS (button, GTK_CAN_FOCUS);
       gtk_container_add (GTK_CONTAINER (button), image);
       gtk_box_pack_start (GTK_BOX (hbox), button, TRUE, TRUE, 0);
       priv->close_button = button;
