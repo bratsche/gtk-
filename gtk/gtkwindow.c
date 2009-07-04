@@ -187,7 +187,7 @@ typedef struct _GtkWindowPrivate GtkWindowPrivate;
 struct _GtkWindowPrivate
 {
   GtkMnemonicHash *mnemonic_hash;
-  
+
   guint above_initially : 1;
   guint below_initially : 1;
   guint fullscreen_initially : 1;
@@ -1448,16 +1448,8 @@ static void
 min_button_clicked (GtkWidget *widget, gpointer data)
 {
   GtkWindow *window = (GtkWindow *)data;
-  GdkWindowState state = gdk_window_get_state (widget->window);
 
-  if (state & GDK_WINDOW_STATE_ICONIFIED)
-    {
-      gtk_window_deiconify (window);
-    }
-  else
-    {
-      gtk_window_iconify (window);
-    }
+  gtk_window_iconify (window);
 }
 
 static void
@@ -1505,6 +1497,7 @@ ensure_title_box (GtkWindow *window)
 
       button = gtk_button_new ();
       gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
+      gtk_widget_set_name (button, "gtk-window-decorated-minimize-button");
       image = gtk_image_new_from_stock (GTK_STOCK_ZOOM_OUT, GTK_ICON_SIZE_MENU);
       gtk_widget_set_tooltip_text (button, _("Minimize Window"));
       GTK_WIDGET_UNSET_FLAGS (button, GTK_CAN_FOCUS);
@@ -1516,6 +1509,7 @@ ensure_title_box (GtkWindow *window)
 
       button = gtk_button_new ();
       gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
+      gtk_widget_set_name (button, "gtk-window-decorated-maximize-button");
       image = gtk_image_new_from_stock (GTK_STOCK_ZOOM_IN, GTK_ICON_SIZE_MENU);
       gtk_widget_set_tooltip_text (button, _("Maximize Window"));
       GTK_WIDGET_UNSET_FLAGS (button, GTK_CAN_FOCUS);
@@ -1527,6 +1521,7 @@ ensure_title_box (GtkWindow *window)
 
       button = gtk_button_new ();
       gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
+      gtk_widget_set_name (button, "gtk-window-decorated-close-button");
       image = gtk_image_new_from_stock (GTK_STOCK_CLOSE, GTK_ICON_SIZE_MENU);
       gtk_widget_set_tooltip_text (button, _("Close Window"));
       GTK_WIDGET_UNSET_FLAGS (button, GTK_CAN_FOCUS);
@@ -1613,6 +1608,7 @@ gtk_window_set_title (GtkWindow   *window,
     {
       GtkWidget *child = gtk_label_new (title);
 
+      gtk_widget_set_name (child, "gtk-window-decorated-title-label");
       gtk_widget_show (child);
       gtk_window_set_label_widget (window, child);
     }
@@ -4471,7 +4467,7 @@ gtk_window_move (GtkWindow *window,
                             "decoration-border-left", &frame_left,
                             NULL);
     }
-  
+
   if (GTK_WIDGET_MAPPED (window))
     {
       /* we have now sent a request with this position
@@ -5023,8 +5019,6 @@ is_client_side_decorated (GtkWindow *window)
   gtk_widget_style_get (GTK_WIDGET (window),
                         "client-side-decorated", &client_side_decorated,
                         NULL);
-
-  return 1 && window->decorated && !priv->disable_client_side_decorations; // XXX - remove this :)
 
   return client_side_decorated && window->decorated && !priv->disable_client_side_decorations;
 }
