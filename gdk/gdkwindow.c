@@ -313,8 +313,6 @@ static void do_move_region_bits_on_impl (GdkWindowObject *private,
 static void gdk_window_invalidate_in_parent (GdkWindowObject *private);
 static void move_native_children (GdkWindowObject *private);
 static void update_cursor (GdkDisplay *display);
-static gboolean is_event_parent_of (GdkWindow *parent,
-				    GdkWindow *child);
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
@@ -419,7 +417,7 @@ gdk_window_class_init (GdkWindowObjectClass *klass)
   drawable_class->draw_polygon = gdk_window_draw_polygon;
   drawable_class->draw_text = gdk_window_draw_text;
   drawable_class->draw_text_wc = gdk_window_draw_text_wc;
-  drawable_class->draw_drawable = gdk_window_draw_drawable;
+  drawable_class->draw_drawable_with_src = gdk_window_draw_drawable;
   drawable_class->draw_points = gdk_window_draw_points;
   drawable_class->draw_segments = gdk_window_draw_segments;
   drawable_class->draw_lines = gdk_window_draw_lines;
@@ -446,37 +444,78 @@ gdk_window_class_init (GdkWindowObjectClass *klass)
   quark_pointer_window = g_quark_from_static_string ("gtk-pointer-window");
 
 
+  /**
+   * GdkWindow::pick-embedded-child:
+   * @window: the window on which the signal is emitted
+   * @x: x coordinate in the window
+   * @y: y coordinate in the window
+   *
+   * The ::pick-embedded-child signal is emitted to find an embedded
+   * child at the given position.
+   *
+   * Returns: the GdkWindow of the embedded child at @x, @y, or %NULL
+   *
+   * Since: 2.18
+   */
   signals[PICK_EMBEDDED_CHILD] =
     g_signal_new (g_intern_static_string ("pick-embedded-child"),
 		  G_OBJECT_CLASS_TYPE (object_class),
 		  G_SIGNAL_RUN_LAST,
 		  0,
 		  accumulate_get_window, NULL,
-		  gdk_marshal_OBJECT__DOUBLE_DOUBLE,
+		  _gdk_marshal_OBJECT__DOUBLE_DOUBLE,
 		  GDK_TYPE_WINDOW,
 		  2,
 		  G_TYPE_DOUBLE,
 		  G_TYPE_DOUBLE);
+
+  /**
+   * GdkWindow::to-embedder:
+   * @window: the offscreen window on which the signal is emitted
+   * @offscreen-x: x coordinate in the offscreen window
+   * @offscreen-y: y coordinate in the offscreen window
+   * @embedder-x: return location for the x coordinate in the embedder window
+   * @embedder-y: return location for the y coordinate in the embedder window
+   *
+   * The ::to-embedder signal is emitted to translate coordinates
+   * in an offscreen window to its embedder.
+   *
+   * Since: 2.18
+   */
   signals[TO_EMBEDDER] =
     g_signal_new (g_intern_static_string ("to-embedder"),
 		  G_OBJECT_CLASS_TYPE (object_class),
 		  G_SIGNAL_RUN_LAST,
 		  0,
 		  NULL, NULL,
-		  gdk_marshal_VOID__DOUBLE_DOUBLE_POINTER_POINTER,
+		  _gdk_marshal_VOID__DOUBLE_DOUBLE_POINTER_POINTER,
 		  G_TYPE_NONE,
 		  4,
 		  G_TYPE_DOUBLE,
 		  G_TYPE_DOUBLE,
 		  G_TYPE_POINTER,
 		  G_TYPE_POINTER);
+
+  /**
+   * GdkWindow::from-embedder:
+   * @window: the offscreen window on which the signal is emitted
+   * @embedder-x: x coordinate in the embedder window
+   * @embedder-y: y coordinate in the embedder window
+   * @offscreen-x: return location for the x coordinate in the offscreen window
+   * @offscreen-y: return location for the y coordinate in the offscreen window
+   *
+   * The ::from-embedder signal is emitted to translate coordinates
+   * in the embedder of an offscreen window to the offscreen window.
+   *
+   * Since: 2.18
+   */
   signals[FROM_EMBEDDER] =
     g_signal_new (g_intern_static_string ("from-embedder"),
 		  G_OBJECT_CLASS_TYPE (object_class),
 		  G_SIGNAL_RUN_LAST,
 		  0,
 		  NULL, NULL,
-		  gdk_marshal_VOID__DOUBLE_DOUBLE_POINTER_POINTER,
+		  _gdk_marshal_VOID__DOUBLE_DOUBLE_POINTER_POINTER,
 		  G_TYPE_NONE,
 		  4,
 		  G_TYPE_DOUBLE,
@@ -600,7 +639,12 @@ remove_child_area (GdkWindowObject *private,
       child_region = gdk_region_rectangle (&r);
 
       if (child->shape)
-	gdk_region_intersect (child_region, child->shape);
+	{
+	  /* Adjust shape region to parent window coords */
+	  gdk_region_offset (child->shape, child->x, child->y);
+	  gdk_region_intersect (child_region, child->shape);
+	  gdk_region_offset (child->shape, -child->x, -child->y);
+	}
       else if (private->window_type == GDK_WINDOW_FOREIGN)
 	{
 	  shape = _gdk_windowing_window_get_shape ((GdkWindow *)child);
@@ -1469,7 +1513,7 @@ gdk_window_reparent (GdkWindow *window,
  * Returns: %TRUE if the window has a native window, %FALSE otherwise
  *
  * Since: 2.18
- **/
+ */
 gboolean
 gdk_window_ensure_native (GdkWindow *window)
 {
@@ -4621,7 +4665,12 @@ _gdk_window_process_updates_recurse (GdkWindow *window,
 
       child_region = gdk_region_rectangle (&r);
       if (child->shape)
-	gdk_region_intersect (child_region, child->shape);
+	{
+	  /* Adjust shape region to parent window coords */
+	  gdk_region_offset (child->shape, child->x, child->y);
+	  gdk_region_intersect (child_region, child->shape);
+	  gdk_region_offset (child->shape, -child->x, -child->y);
+	}
 
       if (child->impl == private->impl)
 	{
@@ -6878,7 +6927,7 @@ gdk_window_set_cursor (GdkWindow *window,
       if (cursor)
 	private->cursor = gdk_cursor_ref (cursor);
 
-      if (is_event_parent_of (window, display->pointer_info.window_under_pointer))
+      if (_gdk_window_event_parent_of (window, display->pointer_info.window_under_pointer))
 	update_cursor (display);
     }
 }
@@ -7865,9 +7914,9 @@ get_event_toplevel (GdkWindow *w)
   return GDK_WINDOW (private);
 }
 
-static gboolean
-is_event_parent_of (GdkWindow *parent,
-		    GdkWindow *child)
+gboolean
+_gdk_window_event_parent_of (GdkWindow *parent,
+ 	  	             GdkWindow *child)
 {
   GdkWindow *w;
 
@@ -7901,7 +7950,7 @@ update_cursor (GdkDisplay *display)
      we've sent, as that would shortly be used anyway. */
   grab = _gdk_display_get_last_pointer_grab (display);
   if (grab != NULL &&
-      !is_event_parent_of (grab->window, (GdkWindow *)cursor_window))
+      !_gdk_window_event_parent_of (grab->window, (GdkWindow *)cursor_window))
     cursor_window = (GdkWindowObject *)grab->window;
 
   /* Set all cursors on toplevel, otherwise its tricky to keep track of
@@ -8729,6 +8778,12 @@ gdk_pointer_grab (GdkWindow *	  window,
   return res;
 }
 
+/**
+ * gdk_window_geometry_changed:
+ * @window: a #GdkWindow
+ *
+ * Since: 2.18
+ */
 void
 gdk_window_geometry_changed (GdkWindow *window)
 {

@@ -580,11 +580,9 @@ _gdk_window_impl_new (GdkWindow     *window,
 	}
       break;
 
-	  /*
     case GDK_WINDOW_CHILD:
       dwStyle = WS_CHILDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
       break;
-	  */
 
     case GDK_WINDOW_TEMP:
       /* A temp window is not necessarily a top level window */
@@ -2091,9 +2089,9 @@ gdk_win32_window_get_root_coords (GdkWindow *window,
   tx = pt.x;
   ty = pt.y;
   
-  if (x)
+  if (root_x)
     *root_x = tx + _gdk_offset_x;
-  if (y)
+  if (root_y)
     *root_y = ty + _gdk_offset_y;
 
   GDK_NOTE (MISC, g_print ("gdk_window_get_root_coords: %p: %+d%+d %+d%+d\n",

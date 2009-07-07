@@ -668,13 +668,21 @@ gdk_draw_drawable (GdkDrawable *drawable,
      windows. We should clip that and (for windows with bg != None) clear that
      area in the destination instead. */
 
-  GDK_DRAWABLE_GET_CLASS (drawable)->draw_drawable (drawable, gc,
-						    composite_impl,
-                                                    xsrc - composite_x_offset,
-                                                    ysrc - composite_y_offset,
-                                                    xdest, ydest,
-                                                    width, height,
-						    src);
+  if (GDK_DRAWABLE_GET_CLASS (drawable)->draw_drawable_with_src)
+    GDK_DRAWABLE_GET_CLASS (drawable)->draw_drawable_with_src (drawable, gc,
+							       composite_impl,
+							       xsrc - composite_x_offset,
+							       ysrc - composite_y_offset,
+							       xdest, ydest,
+							       width, height,
+							       src);
+  else /* backwards compat for old out-of-tree implementations of GdkDrawable (are there any?) */
+    GDK_DRAWABLE_GET_CLASS (drawable)->draw_drawable (drawable, gc,
+						      composite_impl,
+						      xsrc - composite_x_offset,
+						      ysrc - composite_y_offset,
+						      xdest, ydest,
+						      width, height);
 
   g_object_unref (composite);
 }
@@ -743,9 +751,6 @@ gdk_draw_image (GdkDrawable *drawable,
  *
  * On older X servers, rendering pixbufs with an alpha channel involves round 
  * trips to the X server, and may be somewhat slow.
- *
- * The clip mask of @gc is ignored, but clip rectangles and clip regions work
- * fine.
  *
  * If GDK is built with the Sun mediaLib library, the gdk_draw_pixbuf
  * function is accelerated using mediaLib, which provides hardware
@@ -1834,7 +1839,7 @@ _gdk_drawable_get_subwindow_scratch_gc (GdkDrawable *drawable)
 }
 
 
-/**
+/*
  * _gdk_drawable_get_source_drawable:
  * @drawable: a #GdkDrawable
  *

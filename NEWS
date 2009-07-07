@@ -1,3 +1,60 @@
+Overview of Changes from GTK+ 2.17.3 to 2.17.4
+==============================================
+
+* Support for clipmasks in gdk_draw_pixbuf now works, this will
+  introduce visual changes in code that uses clipmasks when drawing
+  pixbufs. However, since this never worked that is unlikely to happen.
+  Old code using gdk_pixbuf_render_threshold_alpha masks when rendering
+  pixbufs will now produce truncated results at the edges.
+
+Overview of Changes from GTK+ 2.17.2 to 2.17.3
+==============================================
+
+* GtkFileChooser:
+ - Shows the size column by default now
+
+* GtkStatusIcon:
+ - Has a title property, which can be used by ATs when they
+   read status icons
+
+* GtkInfoBar:
+ - The default theme now includes color definitions for infobars
+ - The ::use-tooltip-style style property has been removed
+
+* GtkMountOperation now supports interaction during unmount operations.
+
+* The client-side windows branch has been merged; GDK now maintains
+  its own window hierarchy client-side, and only uses X windows where
+  unavoidable. Some of the benefits of this change are
+  - Reduced flicker
+  - The ability to do transformed and animated rendering of widgets
+  - Easier embedding of GTK+ widgets e.g. into Clutter scene graphs
+  This is a fundamental change to the way GDK works, so watch out for
+  regressions.
+
+* Bugs fixed:
+ 586315 Crash in GTK+ 2.14 when calling gtk.FileChooser.list_shor...
+ 461944 pressing the volume icon in full screen shuts down the sound
+ 490724 iconview item's height would be changed event with same m...
+ 564063 regression: Left margin in popup menus
+ 582025 Accelerators fail for submenus
+ 585626 Setting widget tooltip hammers X11 server on any TCP/IP X...
+ 585802 Add API to make GtkStatusIcon accessible with a name
+ 585858 right-click Add-to-Booksmarks is sometimes greyed out
+ 586330 GtkButton ignores user_underline when an image is set
+ 318807 Offscreen windows and window redirection
+ 587716 GtkInfoBar broken on resize
+ 587485 GMountOperation::show-processes support
+
+* Updated translations
+ Brazilian Portuguese
+ Estonian
+ Hebrew
+ Spanish
+ Swedish
+ Vietnamese
+
+
 Overview of Changes from GTK+ 2.17.1 to 2.17.2
 ==============================================
 

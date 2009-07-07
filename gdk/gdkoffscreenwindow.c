@@ -832,12 +832,12 @@ gdk_offscreen_window_get_pointer (GdkWindow       *window,
  * gdk_offscreen_window_get_pixmap:
  * @window: a #GdkWindow
  *
- * Gets the offscreen pixmap that an offscreen window renders into. If
- * you need to keep this around over window resizes, you need to add a
- * reference to it.
+ * Gets the offscreen pixmap that an offscreen window renders into.
+ * If you need to keep this around over window resizes, you need to
+ * add a reference to it.
  *
- * Returns: The offscreen pixmap, or NULL if not offscreen
- **/
+ * Returns: The offscreen pixmap, or %NULL if not offscreen
+ */
 GdkPixmap *
 gdk_offscreen_window_get_pixmap (GdkWindow *window)
 {
@@ -1155,6 +1155,13 @@ gdk_offscreen_window_queue_translation (GdkWindow *window,
 {
 }
 
+/**
+ * gdk_offscreen_window_set_embedder:
+ * @window: a #GdkWindow
+ * @embedder: the #GdkWindow that @window gets embedded in
+ *
+ * Since: 2.18
+ */
 void
 gdk_offscreen_window_set_embedder (GdkWindow     *window,
 				   GdkWindow     *embedder)
@@ -1184,6 +1191,17 @@ gdk_offscreen_window_set_embedder (GdkWindow     *window,
   offscreen->embedder = embedder;
 }
 
+/**
+ * gdk_offscreen_window_get_embedder:
+ * @window: a #GdkWindow
+ *
+ * Gets the window that @window is embedded in.
+ *
+ * Returns: the embedding #GdkWindow, or %NULL if @window is not an
+ *     embedded offscreen window
+ *
+ * Since: 2.18
+ */
 GdkWindow *
 gdk_offscreen_window_get_embedder (GdkWindow *window)
 {
@@ -1224,7 +1242,7 @@ gdk_offscreen_window_class_init (GdkOffscreenWindowClass *klass)
   drawable_class->draw_polygon = gdk_offscreen_window_draw_polygon;
   drawable_class->draw_text = gdk_offscreen_window_draw_text;
   drawable_class->draw_text_wc = gdk_offscreen_window_draw_text_wc;
-  drawable_class->draw_drawable = gdk_offscreen_window_draw_drawable;
+  drawable_class->draw_drawable_with_src = gdk_offscreen_window_draw_drawable;
   drawable_class->draw_points = gdk_offscreen_window_draw_points;
   drawable_class->draw_segments = gdk_offscreen_window_draw_segments;
   drawable_class->draw_lines = gdk_offscreen_window_draw_lines;
