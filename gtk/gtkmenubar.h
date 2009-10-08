@@ -51,6 +51,8 @@ typedef struct _GtkMenuBarClass  GtkMenuBarClass;
 struct _GtkMenuBar
 {
   GtkMenuShell menu_shell;
+
+  gpointer proxy;
 };
 
 struct _GtkMenuBarClass
@@ -63,6 +65,9 @@ struct _GtkMenuBarClass
   void (*_gtk_reserved3) (void);
   void (*_gtk_reserved4) (void);
 };
+
+
+extern gpointer gtk_menu_proxy;
 
 
 GType      gtk_menu_bar_get_type        (void) G_GNUC_CONST;
