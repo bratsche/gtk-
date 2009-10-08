@@ -33,7 +33,7 @@
 
 
 #include <gtk/gtkmenushell.h>
-
+#include <gtk/gtkmenuproxy.h>
 
 G_BEGIN_DECLS
 
@@ -52,7 +52,7 @@ struct _GtkMenuBar
 {
   GtkMenuShell menu_shell;
 
-  gpointer proxy;
+  GtkMenuProxyIface *proxy;
 };
 
 struct _GtkMenuBarClass
@@ -67,7 +67,7 @@ struct _GtkMenuBarClass
 };
 
 
-extern gpointer gtk_menu_proxy;
+extern GtkMenuProxyIface *gtk_menu_proxy;
 
 
 GType      gtk_menu_bar_get_type        (void) G_GNUC_CONST;

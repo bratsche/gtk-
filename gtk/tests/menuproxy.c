@@ -4,7 +4,7 @@
 static void
 proxy_tests (void)
 {
-  gtk_menu_proxy = (gpointer)0x1;
+  gtk_menu_proxy = (GtkMenuProxyIface *)0x1;
 
   GtkWidget *widget = g_object_new (GTK_TYPE_MENU_BAR, NULL);
 
@@ -25,11 +25,18 @@ null_proxy_test (void)
   g_assert (GTK_MENU_BAR (widget)->proxy == gtk_menu_proxy);
 }
 
+static void
+proxy_type_exists (void)
+{
+  g_assert (gtk_menu_proxy_get_type () != 0);
+}
+
 int
 main (int argc, char *argv[])
 {
   gtk_test_init (&argc, &argv);
 
+  g_test_add_func ("/proxy/type-exists", proxy_type_exists);
   g_test_add_func ("/proxy", proxy_tests);
   g_test_add_func ("/proxy/null-proxy", null_proxy_test);
 

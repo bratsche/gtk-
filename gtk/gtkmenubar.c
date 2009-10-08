@@ -43,7 +43,7 @@
 #define BORDER_SPACING  0
 #define DEFAULT_IPADDING 1
 
-gpointer gtk_menu_proxy = NULL;
+GtkMenuProxyIface *gtk_menu_proxy = NULL;
 
 /* Properties */
 enum {
