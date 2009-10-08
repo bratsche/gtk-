@@ -43,8 +43,6 @@
 #define BORDER_SPACING  0
 #define DEFAULT_IPADDING 1
 
-GtkMenuProxyIface *gtk_menu_proxy = NULL;
-
 /* Properties */
 enum {
   PROP_0,
@@ -222,7 +220,7 @@ gtk_menu_bar_class_init (GtkMenuBarClass *class)
 static void
 gtk_menu_bar_init (GtkMenuBar *object)
 {
-  object->proxy = gtk_menu_proxy;
+  object->proxy = gtk_menu_proxy_get ();
 }
 
 GtkWidget*

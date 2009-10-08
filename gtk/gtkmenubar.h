@@ -67,9 +67,6 @@ struct _GtkMenuBarClass
 };
 
 
-extern GtkMenuProxyIface *gtk_menu_proxy;
-
-
 GType      gtk_menu_bar_get_type        (void) G_GNUC_CONST;
 GtkWidget* gtk_menu_bar_new             (void);
 
