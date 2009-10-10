@@ -5,7 +5,7 @@
 #ifndef __GTK_MENU_PROXY_H__
 #define __GTK_MENU_PROXY_H__
 
-#include <gtk/gtkmenushell.h>
+#include <gtk/gtkwidget.h>
 #include <gtk/gtktypeutils.h>
 
 G_BEGIN_DECLS
@@ -22,11 +22,18 @@ typedef struct _GtkMenuProxyIface GtkMenuProxyIface;
 struct _GtkMenuProxyIface
 {
   GTypeInterface g_iface;
+
+  void (* insert) (GtkMenuProxy *proxy, GtkWidget *child, guint position);
+
+  void (* inserted)  (GtkMenuProxy *proxy, GtkWidget *child);
 };
 
 GType              gtk_menu_proxy_get_type      (void) G_GNUC_CONST;
 GtkMenuProxyIface *gtk_menu_proxy_get           (void);
 void               gtk_menu_proxy_register_type (GType type);
+void               gtk_menu_proxy_insert        (GtkMenuProxy *proxy,
+                                                 GtkWidget    *child,
+                                                 guint         position);
 
 G_END_DECLS
 

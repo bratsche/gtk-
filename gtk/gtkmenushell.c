@@ -408,6 +408,8 @@ gtk_menu_shell_init (GtkMenuShell *menu_shell)
   priv->key_hash = NULL;
   priv->take_focus = TRUE;
   priv->activated_submenu = FALSE;
+
+  menu_shell->proxy = gtk_menu_proxy_get ();
 }
 
 static void
@@ -488,6 +490,13 @@ gtk_menu_shell_insert (GtkMenuShell *menu_shell,
   g_return_if_fail (GTK_IS_MENU_ITEM (child));
 
   class = GTK_MENU_SHELL_GET_CLASS (menu_shell);
+
+  // XXX
+  // insert to proxy
+  if (menu_shell->proxy != NULL)
+    gtk_menu_proxy_insert (menu_shell->proxy,
+                           child,
+                           position);
 
   if (class->insert)
     class->insert (menu_shell, child, position);

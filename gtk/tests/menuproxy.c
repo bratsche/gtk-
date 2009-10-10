@@ -47,8 +47,7 @@ non_null_proxy_test (void)
   g_object_ref_sink (widget);
 
   g_assert (GTK_IS_MENU_BAR (widget));
-
-  g_assert (GTK_MENU_BAR (widget)->proxy != NULL);
+  g_assert (GTK_MENU_SHELL (widget)->proxy != NULL);
 
   g_object_unref (widget);
 }
@@ -61,13 +60,54 @@ null_proxy_test (void)
 
   g_assert (GTK_IS_MENU_BAR (widget));
 
-  g_assert (GTK_MENU_BAR (widget)->proxy == NULL);
+  g_assert (GTK_MENU_SHELL (widget)->proxy == NULL);
+
+  g_object_unref (widget);
+}
+
+static gboolean inserted_called = FALSE;
+
+static void
+inserted_cb (GtkMenuProxyIface *proxy,
+             GtkWidget         *child,
+             gpointer           data)
+{
+  inserted_called = TRUE;
+}
+
+static void
+menubar_signals_proxy_test (void)
+{
+  GtkWidget *widget   = NULL;
+  GtkWidget *menuitem = NULL;
+  GtkMenuProxy *proxy;
+
+  gtk_menu_proxy_register_type (test_proxy_get_type ());
+
+  widget = g_object_new (GTK_TYPE_MENU_BAR, NULL);
+  g_object_ref_sink (widget);
+
+  g_assert (GTK_IS_MENU_BAR (widget));
+  g_assert (GTK_MENU_SHELL (widget)->proxy != NULL);
+
+  proxy = GTK_MENU_SHELL (widget)->proxy;
+
+  g_signal_connect (proxy,
+                    "inserted", G_CALLBACK (inserted_cb),
+                    NULL);
+
+  // insert menuitem
+  menuitem = gtk_menu_item_new_with_label ("Test Item");
+  gtk_menu_shell_append (GTK_MENU_SHELL (widget),
+                         menuitem);
+
+  g_assert (inserted_called == TRUE);
 
   g_object_unref (widget);
 }
 
 static void
-proxy_type_exists (void)
+proxy_type_exists_test (void)
 {
   g_assert (gtk_menu_proxy_get_type () != 0);
 }
@@ -90,10 +130,11 @@ main (int argc, char *argv[])
 {
   gtk_test_init (&argc, &argv);
 
-  g_test_add_func ("/proxy/type-exists", proxy_type_exists);
+  g_test_add_func ("/proxy/type-exists", proxy_type_exists_test);
   g_test_add_func ("/proxy/can-instantiate", can_instantiate_test);
   g_test_add_func ("/proxy/null-proxy", null_proxy_test);
   g_test_add_func ("/proxy/non-null-proxy", non_null_proxy_test);
+  g_test_add_func ("/proxy/menubar-signals-proxy", menubar_signals_proxy_test);
 
   return g_test_run();
 }

@@ -33,6 +33,7 @@
 
 
 #include <gtk/gtkcontainer.h>
+#include <gtk/gtkmenuproxy.h>
 
 
 G_BEGIN_DECLS
@@ -51,6 +52,8 @@ typedef struct _GtkMenuShellClass  GtkMenuShellClass;
 struct _GtkMenuShell
 {
   GtkContainer container;
+
+  GtkMenuProxyIface *proxy;
 
   GList *GSEAL (children);
   GtkWidget *GSEAL (active_menu_item);

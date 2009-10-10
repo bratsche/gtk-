@@ -220,7 +220,6 @@ gtk_menu_bar_class_init (GtkMenuBarClass *class)
 static void
 gtk_menu_bar_init (GtkMenuBar *object)
 {
-  object->proxy = gtk_menu_proxy_get ();
 }
 
 GtkWidget*

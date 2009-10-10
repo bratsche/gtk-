@@ -33,7 +33,6 @@
 
 
 #include <gtk/gtkmenushell.h>
-#include <gtk/gtkmenuproxy.h>
 
 G_BEGIN_DECLS
 
@@ -51,8 +50,6 @@ typedef struct _GtkMenuBarClass  GtkMenuBarClass;
 struct _GtkMenuBar
 {
   GtkMenuShell menu_shell;
-
-  GtkMenuProxyIface *proxy;
 };
 
 struct _GtkMenuBarClass
