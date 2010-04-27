@@ -53,7 +53,7 @@ struct _GtkMenuShell
 {
   GtkContainer container;
 
-  GtkMenuProxyIface *proxy;
+  GtkMenuProxy *proxy;
 
   GList *GSEAL (children);
   GtkWidget *GSEAL (active_menu_item);

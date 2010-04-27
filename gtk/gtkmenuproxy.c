@@ -1,69 +1,107 @@
+/*
+ * Copyright (C) 2009 Canonical, Ltd.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ * Authors: Cody Russell <bratsche@gnome.org>
+ */
+
 #include "config.h"
 #include "gtkintl.h"
-#include "gtkmarshal.h"
+#include "gtkmarshalers.h"
 #include "gtkmenuproxy.h"
+#include "gtkmenuproxymodule.h"
+#include "gtkmodules.h"
 
-static void gtk_menu_proxy_base_init (gpointer g_class);
+enum {
+  INSERTED,
+  LAST_SIGNAL
+};
 
-static GtkMenuProxyIface *singleton = NULL;
+static guint               menu_proxy_signals[LAST_SIGNAL] = { 0 };
+static GObjectClass       *parent_class = NULL;
 
-GType
-gtk_menu_proxy_get_type (void)
+static void gtk_menu_proxy_real_insert (GtkMenuProxy *proxy,
+                                        GtkWidget    *child,
+                                        guint         position);
+
+
+
+/* --------------------------------------------------------- */
+
+G_DEFINE_TYPE (GtkMenuProxy, gtk_menu_proxy, G_TYPE_OBJECT)
+
+static void
+gtk_menu_proxy_init (GtkMenuProxy *proxy)
 {
-  static GType menu_proxy_type = 0;
-
-  if (!menu_proxy_type)
-    {
-      const GTypeInfo menu_proxy_info =
-        {
-          sizeof (GtkMenuProxyIface), /* class_size */
-          gtk_menu_proxy_base_init,   /* base_init */
-          NULL,                       /* base_finalize */
-          NULL,
-          NULL,                       /* class_finalize */
-          NULL,                       /* class_data */
-          0,
-          0,
-          NULL
-        };
-
-      menu_proxy_type = g_type_register_static (G_TYPE_INTERFACE, I_("GtkMenuProxy"),
-                                                &menu_proxy_info, 0);
-    }
-
-  return menu_proxy_type;
 }
 
 static void
-gtk_menu_proxy_base_init (gpointer g_class)
+gtk_menu_proxy_class_init (GtkMenuProxyClass *class)
 {
-  static gboolean initialized = FALSE;
+  parent_class = g_type_class_peek_parent (class);
 
-  if (!initialized)
+  menu_proxy_signals[INSERTED] =
+    g_signal_new (I_("inserted"),
+                  G_TYPE_FROM_CLASS (class),
+                  G_SIGNAL_RUN_LAST,
+                  G_STRUCT_OFFSET (GtkMenuProxyClass, inserted),
+                  NULL, NULL,
+                  _gtk_marshal_VOID__OBJECT_UINT,
+                  G_TYPE_NONE, 2,
+                  GTK_TYPE_WIDGET, G_TYPE_UINT);
+
+  class->insert = gtk_menu_proxy_real_insert;
+}
+
+GtkMenuProxy *
+gtk_menu_proxy_get (void)
+{
+  GtkMenuProxyModule *module;
+  GType *proxy_types;
+  guint  n_proxies;
+
+  module = gtk_menu_proxy_module_get ();
+
+  proxy_types = g_type_children (GTK_TYPE_MENU_PROXY,
+                                 &n_proxies);
+
+  g_print ("n_proxies == %d\n", n_proxies);
+
+  if (n_proxies > 1)
     {
-      initialized = TRUE;
+      g_warning ("There are %d child types of GtkMenuProxy, should be 0 or 1.\n",
+                 n_proxies);
+    }
 
-      g_signal_new (I_("inserted"),
-                    GTK_TYPE_MENU_PROXY,
-                    G_SIGNAL_RUN_LAST,
-                    G_STRUCT_OFFSET (GtkMenuProxyIface, inserted),
-                    NULL, NULL,
-                    g_cclosure_marshal_VOID__POINTER,
-                    G_TYPE_NONE, 1,
-                    GTK_TYPE_WIDGET);
+  if (proxy_types != NULL)
+    {
+      return g_object_new (proxy_types[0], NULL);
+    }
+  else
+    {
+      return NULL;
     }
 }
 
-GtkMenuProxyIface *
-gtk_menu_proxy_get (void)
+static void
+gtk_menu_proxy_real_insert (GtkMenuProxy *proxy,
+                            GtkWidget    *child,
+                            guint         position)
 {
-  return singleton;
-}
-
-void
-gtk_menu_proxy_register_type (GType type)
-{
-  singleton = g_object_new (type, NULL);
 }
 
 void
@@ -73,7 +111,10 @@ gtk_menu_proxy_insert (GtkMenuProxy *proxy,
 {
   g_return_if_fail (GTK_IS_MENU_PROXY (proxy));
 
-  (* GTK_MENU_PROXY_GET_IFACE (proxy)->insert) (proxy, child, position);
+  GTK_MENU_PROXY_GET_CLASS (proxy)->insert (proxy,
+                                            child,
+                                            position);
 
-  g_signal_emit_by_name (proxy, "inserted", child);
+  //g_signal_emit_by_name (proxy, "inserted", child, position);
 }
+
