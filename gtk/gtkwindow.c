@@ -94,7 +94,8 @@ enum {
   PROP_GRAVITY,
   PROP_TRANSIENT_FOR,
   PROP_OPACITY,
-  
+  PROP_HAS_RESIZE_GRIP,
+
   /* Readonly properties */
   PROP_IS_ACTIVE,
   PROP_HAS_TOPLEVEL_FOCUS,
@@ -183,6 +184,7 @@ struct _GtkWindowPrivate
   guint focus_on_map : 1;
   guint deletable : 1;
   guint transient_parent_group : 1;
+  guint has_resize_grip : 1;
 
   guint reset_type_hint : 1;
   guint opacity_set : 1;
@@ -190,6 +192,8 @@ struct _GtkWindowPrivate
 
   guint mnemonics_visible : 1;
   guint mnemonics_visible_set : 1;
+
+  GdkWindow *grip_window;
 
   GdkWindowTypeHint type_hint;
 
@@ -223,6 +227,8 @@ static gint gtk_window_key_press_event    (GtkWidget         *widget,
 					   GdkEventKey       *event);
 static gint gtk_window_key_release_event  (GtkWidget         *widget,
 					   GdkEventKey       *event);
+static gint gtk_window_button_press_event (GtkWidget         *widget,
+                                           GdkEventButton    *event);
 static gint gtk_window_enter_notify_event (GtkWidget         *widget,
 					   GdkEventCrossing  *event);
 static gint gtk_window_leave_notify_event (GtkWidget         *widget,
@@ -297,12 +303,18 @@ static GList   *icon_list_from_theme                  (GtkWidget    *widget,
 						       const gchar  *name);
 static void     gtk_window_realize_icon               (GtkWindow    *window);
 static void     gtk_window_unrealize_icon             (GtkWindow    *window);
+static void     get_grip_rect                         (GtkWindow    *window,
+                                                       GdkRectangle *rect);
 
 static void        gtk_window_notify_keys_changed (GtkWindow   *window);
 static GtkKeyHash *gtk_window_get_key_hash        (GtkWindow   *window);
 static void        gtk_window_free_key_hash       (GtkWindow   *window);
 static void	   gtk_window_on_composited_changed (GdkScreen *screen,
 						     GtkWindow *window);
+
+static void        gtk_window_set_has_resize_grip   (GtkWindow *window,
+                                                     gboolean   value);
+static void        resize_grip_create_window         (GtkWindow *window);
 
 static GSList      *toplevel_list = NULL;
 static guint        window_signals[LAST_SIGNAL] = { 0 };
@@ -459,6 +471,7 @@ gtk_window_class_init (GtkWindowClass *klass)
   widget_class->enter_notify_event = gtk_window_enter_notify_event;
   widget_class->leave_notify_event = gtk_window_leave_notify_event;
   widget_class->focus_in_event = gtk_window_focus_in_event;
+  widget_class->button_press_event = gtk_window_button_press_event;
   widget_class->focus_out_event = gtk_window_focus_out_event;
   widget_class->client_event = gtk_window_client_event;
   widget_class->focus = gtk_window_focus;
@@ -737,6 +750,21 @@ gtk_window_class_init (GtkWindowClass *klass)
 							 TRUE,
 							 GTK_PARAM_READWRITE));
 
+  /**
+   * GtkWindow:has-resize-grip
+   *
+   * Whether the window should have a corner resize grip.
+   *
+   * Since: 2.20
+   */
+  g_object_class_install_property (gobject_class,
+                                   PROP_HAS_RESIZE_GRIP,
+                                   g_param_spec_boolean ("has-resize-grip",
+                                                         P_("Resize grip"),
+                                                         P_("Specifies whether the window should have a resize grip"),
+                                                         TRUE,
+                                                         GTK_PARAM_READWRITE));
+
 
   /**
    * GtkWindow:gravity:
@@ -942,6 +970,7 @@ gtk_window_init (GtkWindow *window)
   priv->opacity = 1.0;
   priv->startup_id = NULL;
   priv->mnemonics_visible = TRUE;
+  priv->has_resize_grip = TRUE;
 
   colormap = _gtk_widget_peek_colormap ();
   if (colormap)
@@ -1069,6 +1098,9 @@ gtk_window_set_property (GObject      *object,
     case PROP_MNEMONICS_VISIBLE:
       gtk_window_set_mnemonics_visible (window, g_value_get_boolean (value));
       break;
+    case PROP_HAS_RESIZE_GRIP:
+      gtk_window_set_has_resize_grip (window, g_value_get_boolean (value));
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -1186,6 +1218,9 @@ gtk_window_get_property (GObject      *object,
       break;
     case PROP_MNEMONICS_VISIBLE:
       g_value_set_boolean (value, priv->mnemonics_visible);
+      break;
+    case PROP_HAS_RESIZE_GRIP:
+      g_value_set_boolean (value, priv->has_resize_grip);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -4624,6 +4659,9 @@ gtk_window_map (GtkWidget *widget)
   if (window->frame)
     gdk_window_show (window->frame);
 
+  if (priv->grip_window)
+    gdk_window_show (priv->grip_window);
+
   if (!disable_startup_notification)
     {
       /* Do we have a custom startup-notification id? */
@@ -4681,9 +4719,12 @@ gtk_window_unmap (GtkWidget *widget)
   gtk_widget_set_mapped (widget, FALSE);
   if (window->frame)
     gdk_window_withdraw (window->frame);
-  else 
+  else
     gdk_window_withdraw (widget->window);
-  
+
+  if (priv->grip_window)
+    gdk_window_hide (priv->grip_window);
+
   window->configure_request_count = 0;
   window->configure_notify_received = FALSE;
 
@@ -4839,6 +4880,11 @@ gtk_window_realize (GtkWidget *widget)
   if (window->frame)
     gtk_style_set_background (widget->style, window->frame, GTK_STATE_NORMAL);
 
+  if (priv->has_resize_grip)
+    {
+      resize_grip_create_window (window);
+    }
+
   /* This is a bad hack to set the window background. */
   gtk_window_paint (widget, NULL);
   
@@ -4962,10 +5008,12 @@ gtk_window_size_allocate (GtkWidget     *widget,
 			  GtkAllocation *allocation)
 {
   GtkWindow *window;
+  GtkWindowPrivate *priv;
   GtkAllocation child_allocation;
 
   window = GTK_WINDOW (widget);
   widget->allocation = *allocation;
+  priv = GTK_WINDOW_GET_PRIVATE (window);
 
   if (window->bin.child && gtk_widget_get_visible (window->bin.child))
     {
@@ -4984,6 +5032,17 @@ gtk_window_size_allocate (GtkWidget     *widget,
       gdk_window_resize (window->frame,
 			 allocation->width + window->frame_left + window->frame_right,
 			 allocation->height + window->frame_top + window->frame_bottom);
+    }
+
+  if (priv->grip_window != NULL)
+    {
+      GdkRectangle rect;
+
+      get_grip_rect (window, &rect);
+
+      gdk_window_move_resize (priv->grip_window,
+                              rect.x, rect.y,
+                              rect.width, rect.height);
     }
 }
 
@@ -5101,10 +5160,152 @@ gtk_window_configure_event (GtkWidget         *widget,
   
   widget->allocation.width = event->width;
   widget->allocation.height = event->height;
-  
+
+  gdk_window_invalidate_rect (widget->window, NULL, FALSE);
+
   _gtk_container_queue_resize (GTK_CONTAINER (widget));
   
   return TRUE;
+}
+
+static void
+set_grip_cursor (GtkWindow *window)
+{
+  GtkWindowPrivate *priv = GTK_WINDOW_GET_PRIVATE (window);
+
+  if (priv->has_resize_grip && priv->grip_window != NULL)
+    {
+      GtkWidget *widget = GTK_WIDGET (window);
+      GdkDisplay *display = gtk_widget_get_display (widget);
+      GdkCursorType cursor_type;
+      GdkCursor *cursor;
+
+      if (gtk_widget_is_sensitive (widget))
+        {
+          if (gtk_widget_get_direction (widget) == GTK_TEXT_DIR_LTR)
+            cursor_type = GDK_BOTTOM_RIGHT_CORNER;
+          else
+            cursor_type = GDK_BOTTOM_LEFT_CORNER;
+
+          cursor = gdk_cursor_new_for_display (display, cursor_type);
+          gdk_window_set_cursor (priv->grip_window, cursor);
+          gdk_cursor_unref (cursor);
+        }
+      else
+        gdk_window_set_cursor (priv->grip_window, NULL);
+    }
+}
+
+static void
+get_grip_rect (GtkWindow    *window,
+               GdkRectangle *rect)
+{
+  GtkWidget *widget;
+  gint w, h;
+
+  widget = GTK_WIDGET (window);
+
+  /* These are in effect the max/default size of the grip. */
+  w = 18;
+  h = 18;
+
+  if (w > widget->allocation.width)
+    w = widget->allocation.width;
+
+  if (h > widget->allocation.height - widget->style->ythickness)
+    h = widget->allocation.height - widget->style->ythickness;
+
+  rect->width = w;
+  rect->height = h;
+  rect->y = widget->allocation.y + widget->allocation.height - h;
+
+  if (gtk_widget_get_direction (widget) == GTK_TEXT_DIR_LTR)
+    rect->x = widget->allocation.x + widget->allocation.width - w;
+  else
+    rect->x = widget->allocation.x + widget->style->xthickness;
+}
+
+static void
+resize_grip_create_window (GtkWindow *window)
+{
+  GtkWidget *widget;
+  GtkWindowPrivate *priv;
+  GdkWindowAttr attributes;
+  gint attributes_mask;
+  GdkRectangle rect;
+
+  priv = GTK_WINDOW_GET_PRIVATE (window);
+  widget = GTK_WIDGET (window);
+
+  g_return_if_fail (gtk_widget_get_realized (widget));
+  g_return_if_fail (priv->grip_window == NULL);
+
+  get_grip_rect (window, &rect);
+
+  attributes.x = rect.x;
+  attributes.y = rect.y;
+  attributes.width = rect.width;
+  attributes.height = rect.height;
+  attributes.window_type = GDK_WINDOW_CHILD;
+  attributes.wclass = GDK_INPUT_ONLY;
+  attributes.event_mask = gtk_widget_get_events (widget) | GDK_BUTTON_PRESS_MASK;
+
+  attributes_mask = GDK_WA_X | GDK_WA_Y;
+
+  priv->grip_window = gdk_window_new (widget->window,
+                                      &attributes,
+                                      attributes_mask);
+
+  gdk_window_set_user_data (priv->grip_window, widget);
+
+  gdk_window_raise (priv->grip_window);
+
+  set_grip_cursor (window);
+}
+
+static void
+resize_grip_destroy_window (GtkWindow *window)
+{
+  GtkWindowPrivate *priv = GTK_WINDOW_GET_PRIVATE (window);
+
+  gdk_window_set_user_data (priv->grip_window, NULL);
+  gdk_window_destroy (priv->grip_window);
+  priv->grip_window = NULL;
+}
+
+static void
+gtk_window_set_has_resize_grip (GtkWindow *window,
+                                gboolean   value)
+{
+  GtkWindowPrivate *priv = GTK_WINDOW_GET_PRIVATE (window);
+
+  value = value != FALSE;
+
+  if (value != priv->has_resize_grip)
+    {
+      priv->has_resize_grip = value;
+      //gtk_widget_queue_resize (statusbar->label);  // XXX
+      gtk_widget_queue_draw (GTK_WIDGET (window));
+
+      if (gtk_widget_get_realized (GTK_WIDGET (window)))
+        {
+          if (priv->has_resize_grip && priv->grip_window == NULL)
+            {
+              resize_grip_create_window (window);
+
+              if (gtk_widget_get_mapped (GTK_WIDGET (window)))
+                {
+                  gdk_window_show (priv->grip_window);
+                }
+            }
+          else if (!priv->has_resize_grip && priv->grip_window != NULL)
+            {
+              resize_grip_destroy_window (window);
+            }
+        }
+
+      g_object_notify (G_OBJECT (priv), "has-resize-grip");
+    }
 }
 
 /* the accel_key and accel_mods fields of the key have to be setup
@@ -5236,6 +5437,25 @@ gtk_window_key_release_event (GtkWidget   *widget,
     handled = GTK_WIDGET_CLASS (gtk_window_parent_class)->key_release_event (widget, event);
 
   return handled;
+}
+
+static gint
+gtk_window_button_press_event (GtkWidget *widget,
+                               GdkEventButton *event)
+{
+  GtkWindowPrivate *priv = GTK_WINDOW_GET_PRIVATE (widget);
+
+  if (event->window == priv->grip_window)
+    {
+      gtk_window_begin_resize_drag (GTK_WINDOW (widget),
+                                    GDK_WINDOW_EDGE_SOUTH_EAST,
+                                    event->button,
+                                    event->x_root,
+                                    event->y_root,
+                                    event->time);
+    }
+
+  return FALSE;
 }
 
 static void
@@ -6599,6 +6819,12 @@ gtk_window_compute_hints (GtkWindow   *window,
   new_geometry->win_gravity = window->gravity;
 }
 
+static GdkWindowEdge
+get_grip_edge (GtkWidget *widget)
+{
+  return gtk_widget_get_direction (widget) == GTK_TEXT_DIR_LTR ? GDK_WINDOW_EDGE_SOUTH_EAST : GDK_WINDOW_EDGE_SOUTH_WEST;
+}
+
 /***********************
  * Redrawing functions *
  ***********************/
@@ -6607,14 +6833,41 @@ static void
 gtk_window_paint (GtkWidget     *widget,
 		  GdkRectangle *area)
 {
+  GtkWindowPrivate *priv = GTK_WINDOW_GET_PRIVATE (widget);
+
   gtk_paint_flat_box (widget->style, widget->window, GTK_STATE_NORMAL, 
 		      GTK_SHADOW_NONE, area, widget, "base", 0, 0, -1, -1);
+
+  if (priv->has_resize_grip)
+    {
+      GdkWindowEdge edge;
+      GdkRectangle rect;
+
+      edge = get_grip_edge (widget);
+
+      get_grip_rect (GTK_WINDOW (widget), &rect);
+
+      rect.x = widget->allocation.width - 18;
+      rect.y = widget->allocation.height - 18;
+
+      gtk_paint_resize_grip (widget->style,
+                             widget->window,
+                             gtk_widget_get_state (widget),
+                             area,
+                             widget,
+                             "statusbar",
+                             edge,
+                             rect.x, rect.y,
+                             rect.width, rect.height);
+    }
 }
 
 static gint
 gtk_window_expose (GtkWidget      *widget,
 		   GdkEventExpose *event)
 {
+  GtkWindowPrivate *priv = GTK_WINDOW_GET_PRIVATE (widget);
+
   if (!gtk_widget_get_app_paintable (widget))
     gtk_window_paint (widget, &event->area);
   
