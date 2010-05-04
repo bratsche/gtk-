@@ -883,6 +883,25 @@ gtk_window_class_init (GtkWindowClass *klass)
 
   /* Style properties */
 
+
+  /* XXX - TODO */
+  /* options are: "menu", "minimize", "maximize", "close". */
+  gtk_widget_class_install_style_property (widget_class,
+                                           g_param_spec_string ("decoration-button-layout",
+                                                                P_("Decorated button layout"),
+                                                                P_("Decorated button layout"),
+                                                                "menu:minimize,maximize,close",
+                                                                GTK_PARAM_READWRITE));
+
+  /* XXX - TODO */
+  /* Should be "left", "right", or "center" */
+  gtk_widget_class_install_style_property (widget_class,
+                                           g_param_spec_string ("decoration-title-justification",
+                                                                P_("Decoration title justification"),
+                                                                P_("Decoration title justification"),
+                                                                "center",
+                                                                GTK_PARAM_READWRITE));
+
   /**
    * GtkWindow:client-side-decorated:
    *
@@ -1722,36 +1741,42 @@ ensure_title_box (GtkWindow *window)
       gtk_widget_set_parent (hbox, GTK_WIDGET (window));
 
       button = gtk_button_new ();
+      gtk_widget_set_size_request (button,
+                                   20, 18); // XXX - TODO
       gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
       gtk_widget_set_name (button, "gtk-window-decorated-minimize-button");
-      image = gtk_image_new_from_stock (GTK_STOCK_ZOOM_OUT, GTK_ICON_SIZE_MENU);
+      //image = gtk_image_new_from_stock (GTK_STOCK_ZOOM_OUT, GTK_ICON_SIZE_MENU);
       gtk_widget_set_tooltip_text (button, _("Minimize Window"));
       GTK_WIDGET_UNSET_FLAGS (button, GTK_CAN_FOCUS);
-      gtk_container_add (GTK_CONTAINER (button), image);
+      //gtk_container_add (GTK_CONTAINER (button), image);
       gtk_box_pack_start (GTK_BOX (hbox), button, TRUE, TRUE, 0);
       priv->min_button = button;
       g_signal_connect (G_OBJECT (button), "clicked",
                         G_CALLBACK (min_button_clicked), window);
 
       button = gtk_button_new ();
+      gtk_widget_set_size_request (button,
+                                   20, 18); // XXX - TODO
       gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
       gtk_widget_set_name (button, "gtk-window-decorated-maximize-button");
-      image = gtk_image_new_from_stock (GTK_STOCK_ZOOM_IN, GTK_ICON_SIZE_MENU);
+      //image = gtk_image_new_from_stock (GTK_STOCK_ZOOM_IN, GTK_ICON_SIZE_MENU);
       gtk_widget_set_tooltip_text (button, _("Maximize Window"));
       GTK_WIDGET_UNSET_FLAGS (button, GTK_CAN_FOCUS);
-      gtk_container_add (GTK_CONTAINER (button), image);
+      //gtk_container_add (GTK_CONTAINER (button), image);
       gtk_box_pack_start (GTK_BOX (hbox), button, TRUE, TRUE, 0);
       priv->max_button = button;
       g_signal_connect (G_OBJECT (button), "clicked",
                         G_CALLBACK (max_button_clicked), window);
 
       button = gtk_button_new ();
+      gtk_widget_set_size_request (button,
+                                   20, 18); // XXX - TODO
       gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
       gtk_widget_set_name (button, "gtk-window-decorated-close-button");
-      image = gtk_image_new_from_stock (GTK_STOCK_CLOSE, GTK_ICON_SIZE_MENU);
+      //image = gtk_image_new_from_stock (GTK_STOCK_CLOSE, GTK_ICON_SIZE_MENU);
       gtk_widget_set_tooltip_text (button, _("Close Window"));
       GTK_WIDGET_UNSET_FLAGS (button, GTK_CAN_FOCUS);
-      gtk_container_add (GTK_CONTAINER (button), image);
+      //gtk_container_add (GTK_CONTAINER (button), image);
       gtk_box_pack_start (GTK_BOX (hbox), button, TRUE, TRUE, 0);
       priv->close_button = button;
       g_signal_connect (G_OBJECT (button), "clicked",
@@ -1786,6 +1811,7 @@ gtk_window_set_label_widget (GtkWindow *window,
     }
 
   priv->title_label = label;
+  gtk_widget_set_name (priv->title_label, "decoration-title-focused");
 
   gtk_widget_set_parent (priv->title_label, GTK_WIDGET (window));
   gtk_label_set_ellipsize (GTK_LABEL (priv->title_label), PANGO_ELLIPSIZE_END);
@@ -6477,14 +6503,18 @@ do_focus_change (GtkWidget *widget,
 		 gboolean   in)
 {
   GdkEvent *fevent = gdk_event_new (GDK_FOCUS_CHANGE);
-  
+
   g_object_ref (widget);
-  
+
   if (in)
-    GTK_WIDGET_SET_FLAGS (widget, GTK_HAS_FOCUS);
+    {
+      GTK_WIDGET_SET_FLAGS (widget, GTK_HAS_FOCUS);
+    }
   else
-    GTK_WIDGET_UNSET_FLAGS (widget, GTK_HAS_FOCUS);
-  
+    {
+      GTK_WIDGET_UNSET_FLAGS (widget, GTK_HAS_FOCUS);
+    }
+
   fevent->focus_change.type = GDK_FOCUS_CHANGE;
   fevent->focus_change.window = widget->window;
   if (widget->window)
@@ -6511,6 +6541,13 @@ gtk_window_focus_in_event (GtkWidget     *widget,
 			   GdkEventFocus *event)
 {
   GtkWindow *window = GTK_WINDOW (widget);
+  GtkWindowPrivate *priv = GTK_WINDOW_GET_PRIVATE (widget);
+
+  if (is_client_side_decorated (GTK_WINDOW (widget)))
+    {
+      gtk_widget_set_name (priv->title_label,
+                           "decoration-title-focused");
+    }
 
   /* It appears spurious focus in events can occur when
    *  the window is hidden. So we'll just check to see if
@@ -6533,7 +6570,14 @@ gtk_window_focus_out_event (GtkWidget     *widget,
 			    GdkEventFocus *event)
 {
   GtkWindow *window = GTK_WINDOW (widget);
+  GtkWindowPrivate *priv = GTK_WINDOW_GET_PRIVATE (window);
   gboolean auto_mnemonics;
+
+  if (is_client_side_decorated (GTK_WINDOW (widget)))
+    {
+      gtk_widget_set_name (priv->title_label,
+                           "decoration-title-unfocused");
+    }
 
   _gtk_window_set_has_toplevel_focus (window, FALSE);
   _gtk_window_set_is_active (window, FALSE);
@@ -9838,7 +9882,7 @@ _gtk_window_set_is_toplevel (GtkWindow *window,
  **/
 void
 _gtk_window_set_has_toplevel_focus (GtkWindow *window,
-				   gboolean   has_toplevel_focus)
+                                    gboolean   has_toplevel_focus)
 {
   g_return_if_fail (GTK_IS_WINDOW (window));
   
