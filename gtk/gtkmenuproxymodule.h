@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 Canonical, Ltd.
+ * Copyright (C) 2010 Canonical, Ltd.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,12 +62,7 @@ struct _GtkMenuProxyModuleClass
 
 GType               gtk_menu_proxy_module_get_type (void) G_GNUC_CONST;
 
-//GtkMenuProxyModule *gtk_menu_proxy_module_get      (void);
-
-void                gtk_menu_proxy_module_load     (GtkMenuProxyModule *module);
-void                gtk_menu_proxy_module_unload   (GtkMenuProxyModule *module);
-
-GtkMenuProxyModule *gtk_menu_proxy_module_new (const gchar *filename);
+GtkMenuProxyModule *gtk_menu_proxy_module_get      (void);
 
 G_END_DECLS
 

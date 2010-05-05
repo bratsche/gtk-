@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 Canonical, Ltd.
+ * Copyright (C) 2010 Canonical, Ltd.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,28 +20,23 @@
  */
 
 #include "config.h"
+#include "gtkintl.h"
+#include "gtkmenuproxy.h"
 #include "gtkmenuproxymodule.h"
 #include "gtkmodules.h"
+#include "gtkalias.h"
 
 enum {
   PROP_0,
-  PROP_NAME
+  PROP_MODULENAME
 };
 
 static GObject  *gtk_menu_proxy_module_constructor   (GType                  type,
                                                       guint                  n_params,
                                                       GObjectConstructParam *params);
 static void      gtk_menu_proxy_module_finalize      (GObject               *object);
-static void      gtk_menu_proxy_module_get_property  (GObject               *object,
-                                                      guint                  param_id,
-                                                      GValue                *value,
-                                                      GParamSpec            *pspec);
-static void      gtk_menu_proxy_module_set_property  (GObject               *object,
-                                                      guint                  param_id,
-                                                      const GValue          *value,
-                                                      GParamSpec            *pspec);
-static gboolean  gtk_menu_proxy_module_load_module   (GTypeModule           *gmodule);
-static void      gtk_menu_proxy_module_unload_module (GTypeModule           *gmodule);
+static gboolean  gtk_menu_proxy_module_real_load     (GTypeModule           *gmodule);
+static void      gtk_menu_proxy_module_real_unload   (GTypeModule           *gmodule);
 
 
 G_DEFINE_TYPE (GtkMenuProxyModule, gtk_menu_proxy_module, G_TYPE_TYPE_MODULE);
@@ -56,21 +51,12 @@ gtk_menu_proxy_module_class_init (GtkMenuProxyModuleClass *class)
 
   //object_class->constructor  = gtk_menu_proxy_module_constructor;
   object_class->finalize     = gtk_menu_proxy_module_finalize;
-  object_class->get_property = gtk_menu_proxy_module_get_property;
-  object_class->set_property = gtk_menu_proxy_module_set_property;
 
-  type_module_class->load    = gtk_menu_proxy_module_load_module;
-  type_module_class->unload  = gtk_menu_proxy_module_unload_module;
-
-  g_object_class_install_property (object_class,
-                                   PROP_NAME,
-                                   g_param_spec_string ("name",
-                                                        "Name",
-                                                        "The name of the module",
-                                                        NULL,
-                                                        G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+  type_module_class->load    = gtk_menu_proxy_module_real_load;
+  type_module_class->unload  = gtk_menu_proxy_module_real_unload;
 }
 
+/*
 static GObject *
 gtk_menu_proxy_module_constructor (GType                  type,
                                    guint                  n_params,
@@ -94,11 +80,12 @@ gtk_menu_proxy_module_constructor (GType                  type,
 
   return object;
 }
+*/
 
 static void
 gtk_menu_proxy_module_init (GtkMenuProxyModule *module)
 {
-  module->name = NULL;
+  module->name     = g_strdup (g_getenv ("GTK_MENUPROXY"));
   module->library  = NULL;
   module->load     = NULL;
   module->unload   = NULL;
@@ -109,56 +96,22 @@ gtk_menu_proxy_module_finalize (GObject *object)
 {
   GtkMenuProxyModule *module = GTK_MENU_PROXY_MODULE (object);
 
-  g_free (module->name);
+  if (module->name != NULL)
+    {
+      g_free (module->name);
+    }
 
   G_OBJECT_CLASS (gtk_menu_proxy_module_parent_class)->finalize (object);
 }
 
-static void
-gtk_menu_proxy_module_get_property (GObject    *object,
-                                    guint       param_id,
-                                    GValue     *value,
-                                    GParamSpec *pspec)
-{
-  GtkMenuProxyModule *module = GTK_MENU_PROXY_MODULE (object);
-
-  switch (param_id)
-    {
-    case PROP_NAME:
-      g_value_set_string (value, module->name);
-      break;
-
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, param_id, pspec);
-      break;
-    }
-}
-
-static void
-gtk_menu_proxy_module_set_property (GObject      *object,
-                                    guint         param_id,
-                                    const GValue *value,
-                                    GParamSpec   *pspec)
-{
-  GtkMenuProxyModule *module = GTK_MENU_PROXY_MODULE (object);
-
-  switch (param_id)
-    {
-    case PROP_NAME:
-      g_free (module->name);
-      module->name = g_value_dup_string (value);
-      break;
-
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, param_id, pspec);
-      break;
-    }
-}
-
 static gboolean
-gtk_menu_proxy_module_load_module (GTypeModule *gmodule)
+gtk_menu_proxy_module_real_load (GTypeModule *gmodule)
 {
   GtkMenuProxyModule *module = GTK_MENU_PROXY_MODULE (gmodule);
+  gchar *path;
+
+  if (proxy_module_singleton != NULL)
+    return TRUE;
 
   if (!module->name)
     {
@@ -166,7 +119,9 @@ gtk_menu_proxy_module_load_module (GTypeModule *gmodule)
       return FALSE;
     }
 
-  module->library = g_module_open (module->name, 0);
+  path = _gtk_find_module (module->name, "menuproxies");
+
+  module->library = g_module_open (path, 0);
 
   if (!module->library)
     {
@@ -176,10 +131,10 @@ gtk_menu_proxy_module_load_module (GTypeModule *gmodule)
 
   /* Make sure that the loaded library contains the required methods */
   if (!g_module_symbol (module->library,
-                        "gtk_menu_proxy_module_load",
+                        "menu_proxy_module_load",
                         (gpointer *) &module->load) ||
       !g_module_symbol (module->library,
-                        "gtk_menu_proxy_module_unload",
+                        "menu_proxy_module_unload",
                         (gpointer *) &module->unload))
     {
       g_printerr ("%s\n", g_module_error ());
@@ -195,7 +150,7 @@ gtk_menu_proxy_module_load_module (GTypeModule *gmodule)
 }
 
 static void
-gtk_menu_proxy_module_unload_module (GTypeModule *gmodule)
+gtk_menu_proxy_module_real_unload (GTypeModule *gmodule)
 {
   GtkMenuProxyModule *module = GTK_MENU_PROXY_MODULE (gmodule);
 
@@ -218,50 +173,67 @@ is_valid_module_name (const gchar *name)
 #endif
 }
 
+static void
+setup_instance (GtkMenuProxyModule *module)
+{
+  GType *proxy_types;
+  guint  n_proxies;
+
+  proxy_types = g_type_children (GTK_TYPE_MENU_PROXY,
+                                 &n_proxies);
+
+  if (n_proxies > 1)
+    {
+      g_warning ("There are %d child types of GtkMenuProxy, should be 0 or 1.\n",
+                 n_proxies);
+    }
+  else if (n_proxies == 1)
+    {
+      g_object_new (proxy_types[0], NULL);
+    }
+}
+
 GtkMenuProxyModule *
 gtk_menu_proxy_module_get (void)
 {
-  GtkMenuProxyModule *module = NULL;
-  const gchar *module_name;
-
-  module_name = g_getenv ("GTK_MENUPROXY");
-
-  if (module_name != NULL)
+  if (!proxy_module_singleton)
     {
-      if (is_valid_module_name (module_name))
+      GtkMenuProxyModule *module = NULL;
+      const gchar *module_name;
+
+      module_name = g_getenv ("GTK_MENUPROXY");
+
+      if (module_name != NULL)
         {
-          gchar *path = _gtk_find_module (module_name, "menuproxies");
-
-          module = g_object_new (GTK_TYPE_MENU_PROXY_MODULE,
-                                 "name", path,
-                                 NULL);
-
-          if (!g_type_module_use (G_TYPE_MODULE (module)))
+          if (is_valid_module_name (module_name))
             {
-              g_warning ("Failed to load type module: %s\n", path);
+              gchar *path = _gtk_find_module (module_name, "menuproxies");
 
-              g_object_unref (module);
+              module = g_object_new (GTK_TYPE_MENU_PROXY_MODULE,
+                                     NULL);
+
+              if (!g_type_module_use (G_TYPE_MODULE (module)))
+                {
+                  g_warning ("Failed to load type module: %s\n", path);
+
+                  g_object_unref (module);
+                  g_free (path);
+
+                  return NULL;
+                }
+
+              setup_instance (module);
+
               g_free (path);
-
-              return NULL;
+              g_type_module_unuse (G_TYPE_MODULE (module));
             }
-
-          g_free (path);
-          g_type_module_unuse (G_TYPE_MODULE (module));
 
           proxy_module_singleton = module;
         }
     }
 
-  return module;
+  return proxy_module_singleton;
 }
 
-GtkMenuProxyModule *
-gtk_menu_proxy_module_new (const gchar *filename)
-{
-  g_return_val_if_fail (filename != NULL, NULL);
-
-  return g_object_new (GTK_TYPE_MENU_PROXY_MODULE,
-                       "filename", filename,
-                       NULL);
-}
+#define __GTK_MENU_PROXY_MODULE_C__
+#include "gtkaliasdef.c"

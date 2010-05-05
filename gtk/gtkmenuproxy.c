@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 Canonical, Ltd.
+ * Copyright (C) 2010 Canonical, Ltd.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,6 +25,7 @@
 #include "gtkmenuproxy.h"
 #include "gtkmenuproxymodule.h"
 #include "gtkmodules.h"
+#include "gtkalias.h"
 
 enum {
   INSERTED,
@@ -32,6 +33,8 @@ enum {
 };
 
 static guint               menu_proxy_signals[LAST_SIGNAL] = { 0 };
+static GObjectClass       *parent_class = NULL;
+static GtkMenuProxy       *proxy_singleton = NULL;
 
 static void gtk_menu_proxy_real_insert (GtkMenuProxy *proxy,
                                         GtkWidget    *child,
@@ -43,6 +46,30 @@ static void gtk_menu_proxy_real_insert (GtkMenuProxy *proxy,
 
 G_DEFINE_TYPE (GtkMenuProxy, gtk_menu_proxy, G_TYPE_OBJECT)
 
+static GObject *
+gtk_menu_proxy_constructor (GType                  type,
+                            guint                  n_params,
+                            GObjectConstructParam *params)
+{
+  GObject            *object;
+
+  if (proxy_singleton != NULL)
+    {
+      object = g_object_ref (proxy_singleton);
+    }
+  else
+    {
+      object = G_OBJECT_CLASS (gtk_menu_proxy_parent_class)->constructor (type,
+                                                                          n_params,
+                                                                          params);
+
+      proxy_singleton = GTK_MENU_PROXY (object);
+      g_object_add_weak_pointer (object, (gpointer) &proxy_singleton);
+    }
+
+  return object;
+}
+
 static void
 gtk_menu_proxy_init (GtkMenuProxy *proxy)
 {
@@ -51,7 +78,9 @@ gtk_menu_proxy_init (GtkMenuProxy *proxy)
 static void
 gtk_menu_proxy_class_init (GtkMenuProxyClass *class)
 {
-  gtk_menu_proxy_parent_class = g_type_class_peek_parent (class);
+  GObjectClass *object_class = G_OBJECT_CLASS (class);
+
+  parent_class = g_type_class_peek_parent (class);
 
   menu_proxy_signals[INSERTED] =
     g_signal_new (I_("inserted"),
@@ -64,45 +93,19 @@ gtk_menu_proxy_class_init (GtkMenuProxyClass *class)
                   GTK_TYPE_WIDGET, G_TYPE_UINT);
 
   class->insert = gtk_menu_proxy_real_insert;
+
+  object_class->constructor = gtk_menu_proxy_constructor;
 }
 
 GtkMenuProxy *
 gtk_menu_proxy_get (void)
 {
-  GtkMenuProxyModule *module = NULL;
-  GType *proxy_types = NULL;
-  guint  n_proxies = 0;
-
-  module = gtk_menu_proxy_module_get ();
-
-  if (!module)
+  if (!proxy_singleton)
     {
-      g_warning (" ** Failed to open menu proxy module!");
-      return NULL;
+      gtk_menu_proxy_module_get ();
     }
 
-  proxy_types = g_type_children (GTK_TYPE_MENU_PROXY,
-                                 &n_proxies);
-
-  g_print ("n_proxies == %d\n", n_proxies);
-
-  if (n_proxies > 1)
-    {
-      g_warning ("There are %d child types of GtkMenuProxy, should be 0 or 1.\n",
-                 n_proxies);
-    }
-
-  if (proxy_types != NULL)
-    {
-      g_print (" ===========> type name is: %s\n", g_type_name (proxy_types[0]));
-      //g_print ("is a GtkMenuProxy: %d\n", g_type_is_a (proxy_types[0], gtk_menu_proxy_get_type ()));
-      return NULL;
-      //return g_object_new (proxy_types[0], NULL);
-    }
-  else
-    {
-      return NULL;
-    }
+  return proxy_singleton;
 }
 
 static void
@@ -126,3 +129,5 @@ gtk_menu_proxy_insert (GtkMenuProxy *proxy,
   //g_signal_emit_by_name (proxy, "inserted", child, position);
 }
 
+#define __GTK_MENU_PROXY_C__
+#include "gtkaliasdef.c"

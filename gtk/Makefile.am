@@ -253,7 +253,6 @@ gtk_public_h_sources =          \
 	gtkmenubar.h		\
 	gtkmenuitem.h		\
 	gtkmenuproxy.h		\
-	gtkmenuproxyfactory.h	\
 	gtkmenuproxymodule.h	\
 	gtkmenushell.h		\
 	gtkmenutoolbutton.h	\
@@ -524,7 +523,6 @@ gtk_base_c_sources =            \
 	gtkmenubar.c		\
 	gtkmenuitem.c		\
 	gtkmenuproxy.c		\
-	gtkmenuproxyfactory.c	\
 	gtkmenuproxymodule.c	\
 	gtkmenushell.c		\
 	gtkmenutoolbutton.c	\
