@@ -230,8 +230,7 @@ gtk_menu_proxy_module_get (void)
     {
       if (is_valid_module_name (module_name))
         {
-          gchar *path = _gtk_find_module ("menuproxies",
-                                          module_name);
+          gchar *path = _gtk_find_module (module_name, "menuproxies");
 
           module = g_object_new (GTK_TYPE_MENU_PROXY_MODULE,
                                  "name", path,

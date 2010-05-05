@@ -70,11 +70,17 @@ gtk_menu_proxy_class_init (GtkMenuProxyClass *class)
 GtkMenuProxy *
 gtk_menu_proxy_get (void)
 {
-  GtkMenuProxyModule *module;
+  GtkMenuProxyModule *module = NULL;
   GType *proxy_types;
   guint  n_proxies;
 
   module = gtk_menu_proxy_module_get ();
+
+  if (!module)
+    {
+      g_warning (" ** Failed to open menu proxy module!");
+      return NULL;
+    }
 
   proxy_types = g_type_children (GTK_TYPE_MENU_PROXY,
                                  &n_proxies);
