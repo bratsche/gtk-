@@ -32,7 +32,6 @@ enum {
 };
 
 static guint               menu_proxy_signals[LAST_SIGNAL] = { 0 };
-static GObjectClass       *parent_class = NULL;
 
 static void gtk_menu_proxy_real_insert (GtkMenuProxy *proxy,
                                         GtkWidget    *child,
@@ -52,7 +51,7 @@ gtk_menu_proxy_init (GtkMenuProxy *proxy)
 static void
 gtk_menu_proxy_class_init (GtkMenuProxyClass *class)
 {
-  parent_class = g_type_class_peek_parent (class);
+  gtk_menu_proxy_parent_class = g_type_class_peek_parent (class);
 
   menu_proxy_signals[INSERTED] =
     g_signal_new (I_("inserted"),
@@ -71,8 +70,8 @@ GtkMenuProxy *
 gtk_menu_proxy_get (void)
 {
   GtkMenuProxyModule *module = NULL;
-  GType *proxy_types;
-  guint  n_proxies;
+  GType *proxy_types = NULL;
+  guint  n_proxies = 0;
 
   module = gtk_menu_proxy_module_get ();
 
@@ -95,7 +94,10 @@ gtk_menu_proxy_get (void)
 
   if (proxy_types != NULL)
     {
-      return g_object_new (proxy_types[0], NULL);
+      g_print (" ===========> type name is: %s\n", g_type_name (proxy_types[0]));
+      //g_print ("is a GtkMenuProxy: %d\n", g_type_is_a (proxy_types[0], gtk_menu_proxy_get_type ()));
+      return NULL;
+      //return g_object_new (proxy_types[0], NULL);
     }
   else
     {

@@ -411,7 +411,7 @@ gtk_menu_shell_init (GtkMenuShell *menu_shell)
   priv->key_hash = NULL;
   priv->take_focus = TRUE;
   priv->activated_submenu = FALSE;
-  priv->proxy = gtk_menu_proxy_get ();
+  priv->proxy = gtk_menu_proxy_factory_get_proxy ();
 }
 
 static void

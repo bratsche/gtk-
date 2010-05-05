@@ -54,7 +54,7 @@ gtk_menu_proxy_module_class_init (GtkMenuProxyModuleClass *class)
   GObjectClass     *object_class      = G_OBJECT_CLASS (class);
   GTypeModuleClass *type_module_class = G_TYPE_MODULE_CLASS (class);
 
-  object_class->constructor  = gtk_menu_proxy_module_constructor;
+  //object_class->constructor  = gtk_menu_proxy_module_constructor;
   object_class->finalize     = gtk_menu_proxy_module_finalize;
   object_class->get_property = gtk_menu_proxy_module_get_property;
   object_class->set_property = gtk_menu_proxy_module_set_property;
@@ -254,4 +254,14 @@ gtk_menu_proxy_module_get (void)
     }
 
   return module;
+}
+
+GtkMenuProxyModule *
+gtk_menu_proxy_module_new (const gchar *filename)
+{
+  g_return_val_if_fail (filename != NULL, NULL);
+
+  return g_object_new (GTK_TYPE_MENU_PROXY_MODULE,
+                       "filename", filename,
+                       NULL);
 }

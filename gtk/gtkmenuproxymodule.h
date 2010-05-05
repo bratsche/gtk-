@@ -62,10 +62,12 @@ struct _GtkMenuProxyModuleClass
 
 GType               gtk_menu_proxy_module_get_type (void) G_GNUC_CONST;
 
-GtkMenuProxyModule *gtk_menu_proxy_module_get      (void);
+//GtkMenuProxyModule *gtk_menu_proxy_module_get      (void);
 
 void                gtk_menu_proxy_module_load     (GtkMenuProxyModule *module);
 void                gtk_menu_proxy_module_unload   (GtkMenuProxyModule *module);
+
+GtkMenuProxyModule *gtk_menu_proxy_module_new (const gchar *filename);
 
 G_END_DECLS
 
