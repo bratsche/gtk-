@@ -39,7 +39,7 @@ clicked (GtkWidget *widget,
     {
       timeline = gtk_timeline_new (1000000);
       gtk_timeline_set_transition_func (timeline,
-					gtk_transition_sinusoidal);
+					gtk_transition_mirror);
 
       g_signal_connect (timeline,
 			"frame",

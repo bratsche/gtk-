@@ -10,6 +10,7 @@
 G_BEGIN_DECLS
 
 gdouble gtk_transition_sinusoidal (gdouble position);
+gdouble gtk_transition_mirror     (gdouble position);
 
 G_END_DECLS
 

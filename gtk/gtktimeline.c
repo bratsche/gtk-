@@ -142,6 +142,7 @@ gtk_timeline_tick (GPeriodic *periodic,
   GtkTimeline *timeline = GTK_TIMELINE (user_data);
   GtkTimelinePrivate *priv = timeline->priv;
   gdouble progress;
+  gdouble computed_progress;
   gdouble goal;
 
   goal = priv->direction == GTK_DIRECTION_REVERSE ? 0.0 : 1.0;
@@ -152,9 +153,11 @@ gtk_timeline_tick (GPeriodic *periodic,
     progress = 1.0 - progress;
 
   if (priv->transition)
-    progress = priv->transition (progress);
+    computed_progress = priv->transition (progress);
+  else
+    computed_progress = progress;
 
-  g_signal_emit (timeline, signals[FRAME], 0, progress);
+  g_signal_emit (timeline, signals[FRAME], 0, computed_progress);
 
   if (progress == goal)
     {
