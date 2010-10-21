@@ -26,6 +26,7 @@ testsocket_programs = testsocket testsocket_child
 endif
 
 noinst_PROGRAMS =  $(TEST_PROGS)	\
+	animation			\
 	simple				\
 	flicker				\
 	print-editor			\
@@ -112,6 +113,7 @@ endif
 endif
 
 flicker_DEPENDENCIES = $(TEST_DEPS)
+animation_DEPENDENCIES = $(TEST_DEPS)
 simple_DEPENDENCIES = $(TEST_DEPS)
 print_editor_DEPENDENCIES = $(TEST_DEPS)
 testheightforwidth_DEPENDENCIES = $(TEST_DEPS)
@@ -180,6 +182,7 @@ testexpand_DEPENDENCIES = $(TEST_DEPS)
 testexpander_DEPENDENCIES = $(TEST_DEPS)
 
 flicker_LDADD = $(LDADDS)
+animation_LDADD = $(LDADDS)
 simple_LDADD = $(LDADDS)
 print_editor_LDADD = $(LDADDS)
 testaccel_LDADD = $(LDADDS)
