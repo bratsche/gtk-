@@ -4,11 +4,12 @@
 
 struct _GtkTimelinePrivate
 {
-  guint        length;
-  guint        id;
-  guint64      start_time;
+  guint             length;
+  guint             id;
+  guint64           start_time;
 
-  GtkDirection direction;
+  GtkDirection      direction;
+  GtkTransitionFunc transition;
 };
 
 enum {
@@ -150,6 +151,9 @@ gtk_timeline_tick (GPeriodic *periodic,
   if (priv->direction == GTK_DIRECTION_REVERSE)
     progress = 1.0 - progress;
 
+  if (priv->transition)
+    progress = priv->transition (progress);
+
   g_signal_emit (timeline, signals[FRAME], 0, progress);
 
   if (progress == goal)
@@ -267,4 +271,14 @@ gtk_timeline_get_direction (GtkTimeline *timeline)
   g_return_val_if_fail (GTK_IS_TIMELINE (timeline), GTK_DIRECTION_FORWARD);
 
   return timeline->priv->direction;
+}
+
+void
+gtk_timeline_set_transition_func (GtkTimeline       *timeline,
+				  GtkTransitionFunc  func)
+{
+  g_return_if_fail (GTK_IS_TIMELINE (timeline));
+  g_return_if_fail (timeline->priv->id == 0);
+
+  timeline->priv->transition = func;
 }

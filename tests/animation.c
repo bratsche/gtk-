@@ -38,6 +38,8 @@ clicked (GtkWidget *widget,
   if (timeline == NULL)
     {
       timeline = gtk_timeline_new (1000000);
+      gtk_timeline_set_transition_func (timeline,
+					gtk_transition_sinusoidal);
 
       g_signal_connect (timeline,
 			"frame",

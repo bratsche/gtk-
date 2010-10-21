@@ -311,6 +311,7 @@ gtk_public_h_sources =          \
 	gtktoolpalette.h	\
 	gtktoolshell.h		\
 	gtktooltip.h		\
+	gtktransitions.h	\
 	gtktreednd.h		\
 	gtktreemodel.h		\
 	gtktreemodelfilter.h	\
@@ -593,6 +594,7 @@ gtk_base_c_sources =            \
 	gtktoolshell.c		\
 	gtktooltip.c		\
 	gtktreedatalist.c	\
+	gtktransitions.c	\
 	gtktreednd.c		\
 	gtktreemodel.c		\
 	gtktreemodelfilter.c	\
