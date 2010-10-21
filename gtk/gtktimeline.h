@@ -34,19 +34,22 @@ struct _GtkTimelineClass
 };
 
 
-GType        gtk_timeline_get_type   (void) G_GNUC_CONST;
+GType        gtk_timeline_get_type      (void) G_GNUC_CONST;
 
-GtkTimeline *gtk_timeline_new        (guint           length);
+GtkTimeline *gtk_timeline_new           (guint         length);
 
-guint        gtk_timeline_get_length (GtkTimeline    *timeline);
-void         gtk_timeline_set_length (GtkTimeline    *timeline,
-                                      guint           length);
+guint        gtk_timeline_get_length    (GtkTimeline  *timeline);
+void         gtk_timeline_set_length    (GtkTimeline  *timeline,
+					 guint         length);
+GtkDirection gtk_timeline_get_direction (GtkTimeline  *timeline);
+void         gtk_timeline_set_direction (GtkTimeline  *timeline,
+					 GtkDirection  direction);
 
-void         gtk_timeline_start      (GtkTimeline    *timeline);
-void         gtk_timeline_stop       (GtkTimeline    *timeline);
-void         gtk_timeline_reset      (GtkTimeline    *timeline);
+void         gtk_timeline_start         (GtkTimeline    *timeline);
+void         gtk_timeline_stop          (GtkTimeline    *timeline);
+void         gtk_timeline_reset         (GtkTimeline    *timeline);
 
-gboolean     gtk_timeline_is_running (GtkTimeline    *timeline);
+gboolean     gtk_timeline_is_running    (GtkTimeline    *timeline);
 
 G_END_DECLS
 

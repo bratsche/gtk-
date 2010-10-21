@@ -4,9 +4,11 @@
 
 struct _GtkTimelinePrivate
 {
-  guint   length;
-  guint   id;
-  guint64 start_time;
+  guint        length;
+  guint        id;
+  guint64      start_time;
+
+  GtkDirection direction;
 };
 
 enum {
@@ -15,6 +17,8 @@ enum {
 };
 
 enum {
+  START,
+  FINISH,
   FRAME,
   LAST_SIGNAL
 };
@@ -93,11 +97,27 @@ gtk_timeline_class_init (GtkTimelineClass *c)
   signals[FRAME] = g_signal_new ("frame",
 				 G_TYPE_FROM_CLASS (gobject_class),
 				 G_SIGNAL_RUN_LAST,
-				 NULL,
+				 0,
 				 NULL, NULL,
 				 g_cclosure_marshal_VOID__DOUBLE,
 				 G_TYPE_NONE, 1,
 				 G_TYPE_DOUBLE);
+
+  signals[START] = g_signal_new ("start",
+				 G_TYPE_FROM_CLASS (gobject_class),
+				 G_SIGNAL_RUN_LAST,
+				 0,
+				 NULL, NULL,
+				 g_cclosure_marshal_VOID__VOID,
+				 G_TYPE_NONE, 0);
+
+  signals[FINISH] = g_signal_new ("finish",
+				  G_TYPE_FROM_CLASS (gobject_class),
+				  G_SIGNAL_RUN_LAST,
+				  0,
+				  NULL, NULL,
+				  g_cclosure_marshal_VOID__VOID,
+				  G_TYPE_NONE, 0);
 
   g_type_class_add_private (c, sizeof (GtkTimelinePrivate));
 }
@@ -121,14 +141,21 @@ gtk_timeline_tick (GPeriodic *periodic,
   GtkTimeline *timeline = GTK_TIMELINE (user_data);
   GtkTimelinePrivate *priv = timeline->priv;
   gdouble progress;
+  gdouble goal;
+
+  goal = priv->direction == GTK_DIRECTION_REVERSE ? 0.0 : 1.0;
 
   progress = CLAMP (((gdouble)(timestamp - priv->start_time)) / priv->length, 0., 1.);
 
+  if (priv->direction == GTK_DIRECTION_REVERSE)
+    progress = 1.0 - progress;
+
   g_signal_emit (timeline, signals[FRAME], 0, progress);
 
-  if (progress == 1.0)
+  if (progress == goal)
     {
       gtk_timeline_stop (timeline);
+      g_signal_emit (timeline, signals[FINISH], 0);
     }
 }
 
@@ -222,4 +249,22 @@ gtk_timeline_get_length (GtkTimeline *timeline)
   g_return_val_if_fail (GTK_IS_TIMELINE (timeline), 0);
 
   return timeline->priv->length;
+}
+
+void
+gtk_timeline_set_direction (GtkTimeline  *timeline,
+			    GtkDirection  direction)
+{
+  g_return_if_fail (GTK_IS_TIMELINE (timeline));
+  g_return_if_fail (timeline->priv->id == 0);
+
+  timeline->priv->direction = direction;
+}
+
+GtkDirection
+gtk_timeline_get_direction (GtkTimeline *timeline)
+{
+  g_return_val_if_fail (GTK_IS_TIMELINE (timeline), GTK_DIRECTION_FORWARD);
+
+  return timeline->priv->direction;
 }

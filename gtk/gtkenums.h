@@ -541,6 +541,12 @@ typedef enum
   GTK_SIZE_REQUEST_WIDTH_FOR_HEIGHT
 } GtkSizeRequestMode;
 
+typedef enum
+{
+  GTK_DIRECTION_FORWARD,
+  GTK_DIRECTION_REVERSE
+} GtkDirection;
+
 G_END_DECLS
 
 #endif /* __GTK_ENUMS_H__ */

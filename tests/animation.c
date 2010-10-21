@@ -14,11 +14,19 @@ frame_cb (GtkTimeline *timeline,
 {
   GtkWidget *da = (GtkWidget *)user_data;
 
-  translate[0] += 2.0;
-  translate[1] += 2.0;
-  rotate += 1.0;
+  translate[0] = 400.0 * progress;
+  translate[1] = 400.0 * progress;
+  rotate = 180.0 * progress;
 
   gtk_widget_queue_draw (da);
+}
+
+static void
+finish_cb (GtkTimeline *timeline,
+	   gpointer     user_data)
+{
+  gtk_timeline_set_direction (timeline,
+			      !gtk_timeline_get_direction (timeline));
 }
 
 static void
@@ -30,10 +38,16 @@ clicked (GtkWidget *widget,
   if (timeline == NULL)
     {
       timeline = gtk_timeline_new (1000000);
+
       g_signal_connect (timeline,
 			"frame",
 			G_CALLBACK (frame_cb),
 			da);
+
+      g_signal_connect (timeline,
+			"finish",
+			G_CALLBACK (finish_cb),
+			NULL);
     }
 
   if (gtk_timeline_is_running (timeline))
