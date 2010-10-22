@@ -45,6 +45,9 @@ void         gtk_timeline_set_length    (GtkTimeline  *timeline,
 GtkDirection gtk_timeline_get_direction (GtkTimeline  *timeline);
 void         gtk_timeline_set_direction (GtkTimeline  *timeline,
 					 GtkDirection  direction);
+void         gtk_timeline_set_repeat    (GtkTimeline  *timeline,
+					 gboolean      repeat);
+gboolean     gtk_timeline_get_repeat    (GtkTimeline  *timeline);
 
 void         gtk_timeline_set_transition_func (GtkTimeline       *timeline,
 					       GtkTransitionFunc  func);

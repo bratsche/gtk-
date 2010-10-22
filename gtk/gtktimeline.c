@@ -8,6 +8,7 @@ struct _GtkTimelinePrivate
   guint             id;
   guint64           start_time;
 
+  gboolean          repeat;
   GtkDirection      direction;
   GtkTransitionFunc transition;
 };
@@ -31,12 +32,20 @@ static guint signals[LAST_SIGNAL] = { 0 };
 G_DEFINE_TYPE (GtkTimeline, gtk_timeline, G_TYPE_OBJECT)
 
 static void
-gtk_timeline_finalize (GObject *object)
+gtk_timeline_dispose (GObject *object)
 {
   GtkTimelinePrivate *priv = GTK_TIMELINE (object)->priv;
 
-  gdk_threads_periodic_remove (priv->id);
-  priv->id = 0;
+  if (priv->id != 0)
+    {
+      gdk_threads_periodic_remove (priv->id);
+      priv->id = 0;
+    }
+}
+
+static void
+gtk_timeline_finalize (GObject *object)
+{
 }
 
 static void
@@ -84,6 +93,7 @@ gtk_timeline_class_init (GtkTimelineClass *c)
 
   gobject_class->get_property = gtk_timeline_get_property;
   gobject_class->set_property = gtk_timeline_set_property;
+  gobject_class->dispose      = gtk_timeline_dispose;
   gobject_class->finalize     = gtk_timeline_finalize;
 
   g_object_class_install_property (gobject_class,
@@ -147,7 +157,7 @@ gtk_timeline_tick (GPeriodic *periodic,
 
   goal = priv->direction == GTK_DIRECTION_REVERSE ? 0.0 : 1.0;
 
-  progress = CLAMP (((gdouble)(timestamp - priv->start_time)) / priv->length, 0., 1.);
+  progress = CLAMP (((gdouble)(timestamp - priv->start_time)) / (priv->length * 1000), 0., 1.);
 
   if (priv->direction == GTK_DIRECTION_REVERSE)
     progress = 1.0 - progress;
@@ -161,8 +171,15 @@ gtk_timeline_tick (GPeriodic *periodic,
 
   if (progress == goal)
     {
-      gtk_timeline_stop (timeline);
-      g_signal_emit (timeline, signals[FINISH], 0);
+      if (priv->repeat)
+	{
+	  gtk_timeline_reset (timeline);
+	}
+      else
+	{
+	  gtk_timeline_stop (timeline);
+	  g_signal_emit (timeline, signals[FINISH], 0);
+	}
     }
 }
 
@@ -201,7 +218,7 @@ gtk_timeline_reset (GtkTimeline *timeline)
   GTimeVal timeval;
 
   g_return_if_fail (GTK_IS_TIMELINE (timeline));
-  g_return_if_fail (timeline->priv->id == 0);
+  //g_return_if_fail (timeline->priv->id == 0);
 
   priv = timeline->priv;
 
@@ -284,4 +301,21 @@ gtk_timeline_set_transition_func (GtkTimeline       *timeline,
   g_return_if_fail (timeline->priv->id == 0);
 
   timeline->priv->transition = func;
+}
+
+void
+gtk_timeline_set_repeat (GtkTimeline *timeline,
+			 gboolean     repeat)
+{
+  g_return_if_fail (GTK_IS_TIMELINE (timeline));
+
+  timeline->priv->repeat = repeat;
+}
+
+gboolean
+gtk_timeline_get_repeat (GtkTimeline *timeline)
+{
+  g_return_val_if_fail (GTK_IS_TIMELINE (timeline), FALSE);
+
+  return timeline->priv->repeat;
 }
