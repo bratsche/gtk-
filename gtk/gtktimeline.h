@@ -21,8 +21,6 @@ typedef struct _GtkTimeline        GtkTimeline;
 typedef struct _GtkTimelinePrivate GtkTimelinePrivate;
 typedef struct _GtkTimelineClass   GtkTimelineClass;
 
-typedef gdouble (* GtkTransitionFunc) (gdouble position);
-
 struct _GtkTimeline
 {
   GObject parent_instance;
@@ -48,9 +46,6 @@ void         gtk_timeline_set_direction (GtkTimeline  *timeline,
 void         gtk_timeline_set_repeat    (GtkTimeline  *timeline,
 					 gboolean      repeat);
 gboolean     gtk_timeline_get_repeat    (GtkTimeline  *timeline);
-
-void         gtk_timeline_set_transition_func (GtkTimeline       *timeline,
-					       GtkTransitionFunc  func);
 
 void         gtk_timeline_start         (GtkTimeline    *timeline);
 void         gtk_timeline_stop          (GtkTimeline    *timeline);
