@@ -313,6 +313,8 @@ struct _GtkWidgetPrivate
   /* The widget's parent.
    */
   GtkWidget *parent;
+
+  GHashTable *timelines; /* GTimeline* */
 };
 
 enum {
@@ -8364,6 +8366,52 @@ gtk_widget_render_icon (GtkWidget      *widget,
   return retval;
 }
 
+void
+gtk_widget_register_timeline (GtkWidget   *widget,
+			      const gchar *name,
+			      guint64      length)
+{
+  GtkWidgetPrivate *priv;
+  GTimeline *timeline;
+
+  g_return_if_fail (GTK_IS_WIDGET (widget));
+
+  priv = widget->priv;
+
+  timeline = g_timeline_new (gdk_threads_get_periodic (),
+			     length);
+
+  if (!priv->timelines)
+    {
+      priv->timelines = g_hash_table_new_full (g_str_hash,
+					       g_str_equal,
+					       g_free,
+					       g_object_unref);
+    }
+
+  g_hash_table_insert (priv->timelines,
+		       g_strdup (name),
+		       timeline);
+}
+
+GTimeline *
+gtk_widget_get_timeline (GtkWidget   *widget,
+			 const gchar *name)
+{
+  GtkWidgetPrivate *priv;
+
+  g_return_val_if_fail (GTK_IS_WIDGET (widget), NULL);
+
+  priv = widget->priv;
+
+  if (priv->timelines)
+    {
+      return g_hash_table_lookup (priv->timelines, name);
+    }
+
+  return NULL;
+}
+
 /**
  * gtk_widget_set_parent_window:
  * @widget: a #GtkWidget.
@@ -9707,6 +9755,12 @@ gtk_widget_dispose (GObject *object)
       priv->in_destruction = TRUE;
       g_signal_emit (object, widget_signals[DESTROY], 0);
       priv->in_destruction = FALSE;
+    }
+
+  if (priv->timelines)
+    {
+
+      priv->timelines = NULL;
     }
 
   G_OBJECT_CLASS (gtk_widget_parent_class)->dispose (object);

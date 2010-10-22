@@ -300,7 +300,6 @@ gtk_public_h_sources =          \
 	gtktexttag.h		\
 	gtktexttagtable.h	\
 	gtktextview.h		\
-	gtktimeline.h		\
 	gtktoggleaction.h	\
 	gtktogglebutton.h	\
 	gtktoggletoolbutton.h	\
@@ -311,7 +310,6 @@ gtk_public_h_sources =          \
 	gtktoolpalette.h	\
 	gtktoolshell.h		\
 	gtktooltip.h		\
-	gtktransitions.h	\
 	gtktreednd.h		\
 	gtktreemodel.h		\
 	gtktreemodelfilter.h	\
@@ -581,7 +579,6 @@ gtk_base_c_sources =            \
 	gtktexttypes.c		\
 	gtktextutil.c		\
 	gtktextview.c		\
-	gtktimeline.c		\
 	gtkthemes.c		\
 	gtktoggleaction.c	\
 	gtktogglebutton.c	\
@@ -594,7 +591,6 @@ gtk_base_c_sources =            \
 	gtktoolshell.c		\
 	gtktooltip.c		\
 	gtktreedatalist.c	\
-	gtktransitions.c	\
 	gtktreednd.c		\
 	gtktreemodel.c		\
 	gtktreemodelfilter.c	\

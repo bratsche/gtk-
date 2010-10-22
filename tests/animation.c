@@ -1,33 +1,33 @@
 #include "config.h"
 #include <gtk/gtk.h>
 
-static GtkTimeline *timeline = NULL;
+static GTimeline *timeline = NULL;
 
 static gdouble rotate       = 0.0;
 static gdouble translate[2] = { 1., 1. };
 static gdouble scale        = 1.0;
 
 static void
-frame_cb (GtkTimeline *timeline,
+frame_cb (GTimeline   *timeline,
 	  gdouble      progress,
 	  gpointer     user_data)
 {
   GtkWidget *da = (GtkWidget *)user_data;
-  gdouble computed_progress = gtk_transition_mirror (progress);
+  gdouble computed_progress = g_transition_mirror (progress);
 
   translate[0] = 400.0 * computed_progress;
   translate[1] = 400.0 * computed_progress;
-  rotate = 180.0 * computed_progress;
+  rotate = 180.0 * g_transition_sinusoidal (progress);
 
   gtk_widget_queue_draw (da);
 }
 
 static void
-finish_cb (GtkTimeline *timeline,
+finish_cb (GTimeline *timeline,
 	   gpointer     user_data)
 {
-  gtk_timeline_set_direction (timeline,
-			      !gtk_timeline_get_direction (timeline));
+  g_timeline_set_direction (timeline,
+			    !g_timeline_get_direction (timeline));
 }
 
 static void
@@ -38,7 +38,7 @@ clicked (GtkWidget *widget,
 
   if (timeline == NULL)
     {
-      timeline = gtk_timeline_new (1000);
+      timeline = g_timeline_new (gdk_threads_get_periodic (), 1000);
 
       g_signal_connect (timeline,
 			"frame",
@@ -51,14 +51,14 @@ clicked (GtkWidget *widget,
 			NULL);
     }
 
-  if (gtk_timeline_is_running (timeline))
+  if (g_timeline_is_running (timeline))
     {
-      gtk_timeline_stop (timeline);
+      g_timeline_stop (timeline);
     }
   else
     {
-      gtk_timeline_reset (timeline);
-      gtk_timeline_start (timeline);
+      g_timeline_reset (timeline);
+      g_timeline_start (timeline);
     }
 }
 

@@ -192,8 +192,6 @@
 #include <gtk/gtktoolshell.h>
 #include <gtk/gtktooltip.h>
 #include <gtk/gtktestutils.h>
-#include <gtk/gtktimeline.h>
-#include <gtk/gtktransitions.h>
 #include <gtk/gtktreednd.h>
 #include <gtk/gtktreemodel.h>
 #include <gtk/gtktreemodelfilter.h>

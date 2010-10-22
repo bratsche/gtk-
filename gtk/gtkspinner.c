@@ -36,7 +36,6 @@
 #include "gtkimage.h"
 #include "gtkspinner.h"
 #include "gtkstyle.h"
-#include "gtktimeline.h"
 
 /**
  * SECTION:gtkspinner
@@ -62,7 +61,7 @@ enum {
 
 struct _GtkSpinnerPrivate
 {
-  GtkTimeline *timeline;
+  GTimeline *timeline;
   guint current;
   guint num_steps;
   guint cycle_duration;
@@ -214,6 +213,8 @@ gtk_spinner_init (GtkSpinner *spinner)
   spinner->priv = priv;
 
   gtk_widget_set_has_window (GTK_WIDGET (spinner), FALSE);
+
+  gtk_widget_register_timeline (GTK_WIDGET (spinner), "spin", 500);
 }
 
 static void
@@ -267,7 +268,7 @@ gtk_spinner_draw (GtkWidget *widget,
 }
 
 static void
-gtk_spinner_tick (GtkTimeline *timeline,
+gtk_spinner_tick (GTimeline   *timeline,
 		  gdouble      progress,
                   gpointer     user_data)
 {
@@ -290,16 +291,16 @@ gtk_spinner_map (GtkWidget *widget)
 
   if (!priv->timeline)
     {
-      priv->timeline = gtk_timeline_new (priv->cycle_duration);
+      priv->timeline = gtk_widget_get_timeline (widget, "spin");
+      g_timeline_set_repeat (priv->timeline, TRUE);
       g_signal_connect (priv->timeline,
 			"frame",
 			G_CALLBACK (gtk_spinner_tick),
 			widget);
-      gtk_timeline_set_repeat (priv->timeline, TRUE);
     }
 
   if (priv->active)
-    gtk_timeline_start (priv->timeline);
+    g_timeline_start (priv->timeline);
 }
 
 static void
@@ -308,8 +309,8 @@ gtk_spinner_unmap (GtkWidget *widget)
   GtkSpinner *spinner = GTK_SPINNER (widget);
   GtkSpinnerPrivate *priv = spinner->priv;
 
-  if (priv->timeline && gtk_timeline_is_running (priv->timeline))
-    gtk_timeline_stop (priv->timeline);
+  if (priv->timeline && g_timeline_is_running (priv->timeline))
+    g_timeline_stop (priv->timeline);
 
   GTK_WIDGET_CLASS (gtk_spinner_parent_class)->unmap (widget);
 }
@@ -340,7 +341,7 @@ gtk_spinner_dispose (GObject *gobject)
 
   if (priv->timeline != NULL)
     {
-      gtk_timeline_stop (priv->timeline);
+      g_timeline_stop (priv->timeline);
       g_object_unref (priv->timeline);
       priv->timeline = NULL;
     }
@@ -362,13 +363,13 @@ gtk_spinner_set_active (GtkSpinner *spinner, gboolean active)
       priv->active = active;
       g_object_notify (G_OBJECT (spinner), "active");
 
-      if (active && gtk_widget_get_realized (GTK_WIDGET (spinner)) && !gtk_timeline_is_running (priv->timeline))
+      if (active && gtk_widget_get_realized (GTK_WIDGET (spinner)) && !g_timeline_is_running (priv->timeline))
         {
-	  gtk_timeline_start (priv->timeline);
+	  g_timeline_start (priv->timeline);
         }
-      else if (!active && gtk_timeline_is_running (priv->timeline))
+      else if (!active && g_timeline_is_running (priv->timeline))
         {
-	  gtk_timeline_stop (priv->timeline);
+	  g_timeline_stop (priv->timeline);
         }
     }
 }
