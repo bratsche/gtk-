@@ -13,10 +13,11 @@ frame_cb (GtkTimeline *timeline,
 	  gpointer     user_data)
 {
   GtkWidget *da = (GtkWidget *)user_data;
+  gdouble computed_progress = gtk_transition_mirror (progress);
 
-  translate[0] = 400.0 * progress;
-  translate[1] = 400.0 * progress;
-  rotate = 180.0 * progress;
+  translate[0] = 400.0 * computed_progress;
+  translate[1] = 400.0 * computed_progress;
+  rotate = 180.0 * computed_progress;
 
   gtk_widget_queue_draw (da);
 }
@@ -37,9 +38,7 @@ clicked (GtkWidget *widget,
 
   if (timeline == NULL)
     {
-      timeline = gtk_timeline_new (1000000);
-      gtk_timeline_set_transition_func (timeline,
-					gtk_transition_mirror);
+      timeline = gtk_timeline_new (1000);
 
       g_signal_connect (timeline,
 			"frame",

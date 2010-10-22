@@ -10,7 +10,6 @@ struct _GtkTimelinePrivate
 
   gboolean          repeat;
   GtkDirection      direction;
-  GtkTransitionFunc transition;
 };
 
 enum {
@@ -152,7 +151,6 @@ gtk_timeline_tick (GPeriodic *periodic,
   GtkTimeline *timeline = GTK_TIMELINE (user_data);
   GtkTimelinePrivate *priv = timeline->priv;
   gdouble progress;
-  gdouble computed_progress;
   gdouble goal;
 
   goal = priv->direction == GTK_DIRECTION_REVERSE ? 0.0 : 1.0;
@@ -162,12 +160,7 @@ gtk_timeline_tick (GPeriodic *periodic,
   if (priv->direction == GTK_DIRECTION_REVERSE)
     progress = 1.0 - progress;
 
-  if (priv->transition)
-    computed_progress = priv->transition (progress);
-  else
-    computed_progress = progress;
-
-  g_signal_emit (timeline, signals[FRAME], 0, computed_progress);
+  g_signal_emit (timeline, signals[FRAME], 0, progress);
 
   if (progress == goal)
     {
@@ -218,7 +211,6 @@ gtk_timeline_reset (GtkTimeline *timeline)
   GTimeVal timeval;
 
   g_return_if_fail (GTK_IS_TIMELINE (timeline));
-  //g_return_if_fail (timeline->priv->id == 0);
 
   priv = timeline->priv;
 
@@ -291,16 +283,6 @@ gtk_timeline_get_direction (GtkTimeline *timeline)
   g_return_val_if_fail (GTK_IS_TIMELINE (timeline), GTK_DIRECTION_FORWARD);
 
   return timeline->priv->direction;
-}
-
-void
-gtk_timeline_set_transition_func (GtkTimeline       *timeline,
-				  GtkTransitionFunc  func)
-{
-  g_return_if_fail (GTK_IS_TIMELINE (timeline));
-  g_return_if_fail (timeline->priv->id == 0);
-
-  timeline->priv->transition = func;
 }
 
 void
