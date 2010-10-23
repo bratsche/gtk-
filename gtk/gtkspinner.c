@@ -95,6 +95,10 @@ static void gtk_spinner_get_preferred_height (GtkWidget *widget,
 static AtkObject *gtk_spinner_get_accessible      (GtkWidget *widget);
 static GType      gtk_spinner_accessible_get_type (void);
 
+static void       gtk_spinner_tick (GTimeline   *timeline,
+                                    gdouble      progress,
+                                    gpointer     user_data);
+
 G_DEFINE_TYPE (GtkSpinner, gtk_spinner, GTK_TYPE_WIDGET)
 
 static void
@@ -214,7 +218,10 @@ gtk_spinner_init (GtkSpinner *spinner)
 
   gtk_widget_set_has_window (GTK_WIDGET (spinner), FALSE);
 
-  gtk_widget_register_timeline (GTK_WIDGET (spinner), "spin", 500);
+  gtk_widget_register_timeline (GTK_WIDGET (spinner),
+                                "spin",
+                                500,
+                                (GTimelineTickFunc)gtk_spinner_tick);
 }
 
 static void
@@ -293,10 +300,6 @@ gtk_spinner_map (GtkWidget *widget)
     {
       priv->timeline = gtk_widget_get_timeline (widget, "spin");
       g_timeline_set_repeat (priv->timeline, TRUE);
-      g_signal_connect (priv->timeline,
-			"frame",
-			G_CALLBACK (gtk_spinner_tick),
-			widget);
     }
 
   if (priv->active)
