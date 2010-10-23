@@ -274,7 +274,7 @@ static void gtk_default_draw_expander   (GtkStyle        *style,
                                          const gchar     *detail,
                                          gint             x,
                                          gint             y,
-					 GtkExpanderStyle expander_style);
+					 gdouble          progress);
 static void gtk_default_draw_layout     (GtkStyle        *style,
                                          cairo_t         *cr,
                                          GtkStateType     state_type,
@@ -3787,7 +3787,7 @@ gtk_default_draw_expander (GtkStyle        *style,
                            const gchar     *detail,
                            gint             x,
                            gint             y,
-			   GtkExpanderStyle expander_style)
+			   gdouble          progress)
 {
 #define DEFAULT_EXPANDER_SIZE 12
 
@@ -3796,7 +3796,6 @@ gtk_default_draw_expander (GtkStyle        *style,
   double vertical_overshoot;
   int diameter;
   double radius;
-  double interp;		/* interpolation factor for center position */
   double x_double_horz, y_double_horz;
   double x_double_vert, y_double_vert;
   double x_double, y_double;
@@ -3812,29 +3811,16 @@ gtk_default_draw_expander (GtkStyle        *style,
     }
   else
     expander_size = DEFAULT_EXPANDER_SIZE;
-    
+
   line_width = MAX (1, expander_size/9);
 
-  switch (expander_style)
+  if (get_direction (widget) == GTK_TEXT_DIR_LTR)
     {
-    case GTK_EXPANDER_COLLAPSED:
-      degrees = (get_direction (widget) == GTK_TEXT_DIR_RTL) ? 180 : 0;
-      interp = 0.0;
-      break;
-    case GTK_EXPANDER_SEMI_COLLAPSED:
-      degrees = (get_direction (widget) == GTK_TEXT_DIR_RTL) ? 150 : 30;
-      interp = 0.25;
-      break;
-    case GTK_EXPANDER_SEMI_EXPANDED:
-      degrees = (get_direction (widget) == GTK_TEXT_DIR_RTL) ? 120 : 60;
-      interp = 0.75;
-      break;
-    case GTK_EXPANDER_EXPANDED:
-      degrees = 90;
-      interp = 1.0;
-      break;
-    default:
-      g_assert_not_reached ();
+      degrees = 90 * progress;
+    }
+  else
+    {
+      degrees = 180 - (progress * progress);
     }
 
   /* Compute distance that the stroke extends beyonds the end
@@ -3873,8 +3859,8 @@ gtk_default_draw_expander (GtkStyle        *style,
   x_double_horz = x - 0.5;
   y_double_horz = floor (y - (radius + line_width) / 2.) + (radius + line_width) / 2.;
 
-  x_double = x_double_vert * (1 - interp) + x_double_horz * interp;
-  y_double = y_double_vert * (1 - interp) + y_double_horz * interp;
+  x_double = x_double_vert * (1 - progress) + x_double_horz * progress;
+  y_double = y_double_vert * (1 - progress) + y_double_horz * progress;
   
   cairo_translate (cr, x_double, y_double);
   cairo_rotate (cr, degrees * G_PI / 180);
@@ -5200,10 +5186,9 @@ gtk_paint_handle (GtkStyle           *style,
  * @detail: (allow-none): a style detail
  * @x: the x position to draw the expander at
  * @y: the y position to draw the expander at
- * @expander_style: the style to draw the expander in; determines
- *   whether the expander is collapsed, expanded, or in an
- *   intermediate state.
- * 
+ * @progress: [0.0..1.0] value describing the progress into the
+ * animation.
+ *
  * Draws an expander as used in #GtkTreeView. @x and @y specify the
  * center the expander. The size of the expander is determined by the
  * "expander-size" style property of @widget.  (If widget is not
@@ -5222,7 +5207,7 @@ gtk_paint_expander (GtkStyle           *style,
                     const gchar        *detail,
                     gint                x,
                     gint                y,
-                    GtkExpanderStyle    expander_style)
+                    gdouble             progress)
 {
   g_return_if_fail (GTK_IS_STYLE (style));
   g_return_if_fail (GTK_STYLE_GET_CLASS (style)->draw_expander != NULL);
@@ -5232,7 +5217,7 @@ gtk_paint_expander (GtkStyle           *style,
 
   GTK_STYLE_GET_CLASS (style)->draw_expander (style, cr, state_type,
                                               widget, detail,
-                                              x, y, expander_style);
+                                              x, y, progress);
 
   cairo_restore (cr);
 }

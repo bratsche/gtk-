@@ -606,7 +606,7 @@ void gtk_paint_expander          (GtkStyle           *style,
                                   const gchar        *detail,
                                   gint                x,
                                   gint                y,
-                                  GtkExpanderStyle    expander_style);
+                                  gdouble             progress);
 void gtk_paint_layout            (GtkStyle           *style,
                                   cairo_t            *cr,
                                   GtkStateType        state_type,

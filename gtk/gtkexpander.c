@@ -60,6 +60,7 @@ struct _GtkExpanderPrivate
   GtkExpanderStyle  expander_style;
   guint             animation_timeout;
   guint             expand_timer;
+  gdouble           progress;
 
   guint             expanded : 1;
   guint             use_underline : 1;
@@ -147,6 +148,10 @@ static void  gtk_expander_get_preferred_width_for_height  (GtkWidget           *
                                                            gint                 width,
                                                            gint                *minimum_height,
                                                            gint                *natural_height);
+
+static void  gtk_expander_tick (GTimeline *timeline,
+                                gdouble    progress,
+                                gpointer   user_data);
 
 G_DEFINE_TYPE_WITH_CODE (GtkExpander, gtk_expander, GTK_TYPE_BIN,
 			 G_IMPLEMENT_INTERFACE (GTK_TYPE_BUILDABLE,
@@ -310,6 +315,11 @@ gtk_expander_init (GtkExpander *expander)
 
   gtk_drag_dest_set (GTK_WIDGET (expander), 0, NULL, 0, 0);
   gtk_drag_dest_set_track_motion (GTK_WIDGET (expander), TRUE);
+
+  gtk_widget_register_timeline (GTK_WIDGET (expander),
+                                "expand",
+                                1000,
+                                (GTimelineTickFunc)gtk_expander_tick);
 }
 
 static void
@@ -339,7 +349,7 @@ gtk_expander_set_property (GObject      *object,
 			   GParamSpec   *pspec)
 {
   GtkExpander *expander = GTK_EXPANDER (object);
-                                                                                                             
+
   switch (prop_id)
     {
     case PROP_EXPANDED:
@@ -800,7 +810,7 @@ gtk_expander_paint (GtkExpander *expander, cairo_t *cr)
 		      "expander",
 		      clip.x + clip.width / 2 - allocation.x,
 		      clip.y + clip.height / 2 - allocation.y,
-		      expander->priv->expander_style);
+		      expander->priv->progress);
 }
 
 static void
@@ -835,7 +845,7 @@ gtk_expander_paint_focus (GtkExpander *expander,
 			NULL);
 
   ltr = gtk_widget_get_direction (widget) != GTK_TEXT_DIR_RTL;
-  
+
   width = height = 0;
 
   if (priv->label_widget)
@@ -1525,71 +1535,67 @@ gtk_expander_new_with_mnemonic (const gchar *label)
 		       NULL);
 }
 
-static gboolean
-gtk_expander_animation_timeout (GtkExpander *expander)
+static void
+gtk_expander_tick (GTimeline *timeline,
+                   gdouble    progress,
+                   gpointer   user_data)
 {
+  GtkExpander *expander = GTK_EXPANDER (user_data);
   GtkExpanderPrivate *priv = expander->priv;
   GtkWidget *widget = GTK_WIDGET (expander);
+  GtkRequisition minimum;
+  GtkRequisition natural;
+  GtkAllocation allocation;
   GtkWidget *child;
-  GdkRectangle area;
-  gboolean finish = FALSE;
 
-  if (gtk_widget_get_realized (widget))
-    {
-      get_expander_bounds (expander, &area);
-      gdk_window_invalidate_rect (gtk_widget_get_window (widget), &area, TRUE);
-    }
+  child = gtk_bin_get_child (GTK_BIN (expander));
+  gtk_widget_get_preferred_size (child,
+                                 &minimum,
+                                 &natural);
 
+  priv->progress = progress;
+
+  allocation.width = natural.width;
+  allocation.height = natural.height * progress;
+
+  /* For now we're only doing this during the first tick, but we
+   * should change this so we're animating the expansion itself.
+   */
   if (priv->expanded)
     {
-      if (priv->expander_style == GTK_EXPANDER_COLLAPSED)
-	{
-	  priv->expander_style = GTK_EXPANDER_SEMI_EXPANDED;
-	}
-      else
-	{
-	  priv->expander_style = GTK_EXPANDER_EXPANDED;
-	  finish = TRUE;
-	}
+      if (!gtk_widget_get_child_visible (child))
+        {
+          gtk_widget_set_child_visible (child, TRUE);
+          gtk_widget_size_allocate (child, &allocation);
+          gtk_widget_queue_resize (widget);
+        }
     }
   else
     {
-      if (priv->expander_style == GTK_EXPANDER_EXPANDED)
-	{
-	  priv->expander_style = GTK_EXPANDER_SEMI_COLLAPSED;
-	}
-      else
-	{
-	  priv->expander_style = GTK_EXPANDER_COLLAPSED;
-	  finish = TRUE;
-	}
+      if (gtk_widget_get_child_visible (child))
+        {
+          gtk_widget_set_child_visible (child, FALSE);
+          gtk_widget_size_allocate (child, &allocation);
+          gtk_widget_queue_resize (widget);
+        }
     }
 
-  if (finish)
-    {
-      priv->animation_timeout = 0;
-
-      child = gtk_bin_get_child (GTK_BIN (expander));
-      if (child)
-	gtk_widget_set_child_visible (child, priv->expanded);
-      gtk_widget_queue_resize (widget);
-    }
-
-  return !finish;
+  gtk_widget_queue_draw (widget);
 }
 
 static void
 gtk_expander_start_animation (GtkExpander *expander)
 {
   GtkExpanderPrivate *priv = expander->priv;
+  GTimeline *timeline = gtk_widget_get_timeline (GTK_WIDGET (expander), "expand");
 
-  if (priv->animation_timeout)
-    g_source_remove (priv->animation_timeout);
+  if (g_timeline_is_running (timeline))
+    g_timeline_stop (timeline);
 
-  priv->animation_timeout =
-		gdk_threads_add_timeout (50,
-			       (GSourceFunc) gtk_expander_animation_timeout,
-			       expander);
+  g_timeline_set_direction (timeline, !priv->expanded);
+  g_timeline_reset (timeline);
+
+  g_timeline_start (timeline);
 }
 
 /**
