@@ -8367,9 +8367,10 @@ gtk_widget_render_icon (GtkWidget      *widget,
 }
 
 void
-gtk_widget_register_timeline (GtkWidget   *widget,
-			      const gchar *name,
-			      guint64      length)
+gtk_widget_register_timeline (GtkWidget         *widget,
+			      const gchar       *name,
+			      guint64            length,
+                              GTimelineTickFunc  tick)
 {
   GtkWidgetPrivate *priv;
   GTimeline *timeline;
@@ -8380,6 +8381,10 @@ gtk_widget_register_timeline (GtkWidget   *widget,
 
   timeline = g_timeline_new (gdk_threads_get_periodic (),
 			     length);
+  g_signal_connect (timeline,
+                    "frame",
+                    G_CALLBACK (tick),
+                    widget);
 
   if (!priv->timelines)
     {

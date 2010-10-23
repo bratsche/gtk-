@@ -761,11 +761,14 @@ GdkPixbuf    *gtk_widget_render_icon          (GtkWidget   *widget,
                                                GtkIconSize  size,
                                                const gchar *detail);
 
-void          gtk_widget_register_timeline    (GtkWidget   *widget,
-					       const gchar *name,
-					       guint64      length);
-GTimeline    *gtk_widget_get_timeline         (GtkWidget   *widget,
-					       const gchar *name);
+/* Animation timelines */
+void          gtk_widget_register_timeline    (GtkWidget         *widget,
+					       const gchar       *name,
+					       guint64            length,
+                                               GTimelineTickFunc  tick);
+GTimeline    *gtk_widget_get_timeline         (GtkWidget         *widget,
+					       const gchar       *name);
+
 
 /* handle composite names for GTK_COMPOSITE_CHILD widgets,
  * the returned name is newly allocated.
