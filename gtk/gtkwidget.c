@@ -8417,6 +8417,49 @@ gtk_widget_get_timeline (GtkWidget   *widget,
   return NULL;
 }
 
+void
+gtk_widget_run_timeline (GtkWidget   *widget,
+                         const gchar *name,
+                         gpointer     user_data)
+{
+  GtkWidgetPrivate *priv;
+
+  g_return_if_fail (GTK_IS_WIDGET (widget));
+
+  priv = widget->priv;
+
+  if (priv->timelines)
+    {
+      GTimeline *timeline = (GTimeline *)g_hash_table_lookup (priv->timelines, name);
+
+      if (timeline)
+        {
+          g_timeline_start (timeline);
+        }
+    }
+}
+
+void
+gtk_widget_stop_timeline (GtkWidget   *widget,
+                          const gchar *name)
+{
+  GtkWidgetPrivate *priv;
+
+  g_return_if_fail (GTK_IS_WIDGET (widget));
+
+  priv = widget->priv;
+
+  if (priv->timelines)
+    {
+      GTimeline *timeline  = (GTimeline *)g_hash_table_lookup (priv->timelines, name);
+
+      if (timeline && g_timeline_is_running (timeline))
+        {
+          g_timeline_stop (timeline);
+        }
+    }
+}
+
 /**
  * gtk_widget_set_parent_window:
  * @widget: a #GtkWidget.

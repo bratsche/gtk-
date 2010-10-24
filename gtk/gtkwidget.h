@@ -768,6 +768,11 @@ void          gtk_widget_register_timeline    (GtkWidget         *widget,
                                                GTimelineTickFunc  tick);
 GTimeline    *gtk_widget_get_timeline         (GtkWidget         *widget,
 					       const gchar       *name);
+void          gtk_widget_run_timeline         (GtkWidget         *widget,
+                                               const gchar       *name,
+                                               gpointer           user_data);
+void          gtk_widget_stop_timeline        (GtkWidget         *widget,
+                                               const gchar       *name);
 
 
 /* handle composite names for GTK_COMPOSITE_CHILD widgets,
