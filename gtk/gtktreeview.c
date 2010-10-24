@@ -380,14 +380,6 @@ static gboolean gtk_tree_view_has_special_cell               (GtkTreeView       
 static void     column_sizing_notify                         (GObject            *object,
                                                               GParamSpec         *pspec,
                                                               gpointer            data);
-static gboolean expand_collapse_timeout                      (gpointer            data);
-static void     add_expand_collapse_timeout                  (GtkTreeView        *tree_view,
-                                                              GtkRBTree          *tree,
-                                                              GtkRBNode          *node,
-                                                              gboolean            expand);
-static void     remove_expand_collapse_timeout               (GtkTreeView        *tree_view);
-static void     cancel_arrow_animation                       (GtkTreeView        *tree_view);
-static gboolean do_expand_collapse                           (GtkTreeView        *tree_view);
 static void     gtk_tree_view_stop_rubber_band               (GtkTreeView        *tree_view);
 static void     update_prelight                              (GtkTreeView        *tree_view,
                                                               int                 x,
@@ -478,6 +470,10 @@ static void     gtk_tree_view_buildable_init               (GtkBuildableIface *i
 static gboolean scroll_row_timeout                   (gpointer     data);
 static void     add_scroll_timeout                   (GtkTreeView *tree_view);
 static void     remove_scroll_timeout                (GtkTreeView *tree_view);
+
+static void     gtk_tree_view_expand_tick            (GTimeline *timeline,
+                                                      gdouble    progress,
+                                                      gpointer   user_data);
 
 static guint tree_view_signals [LAST_SIGNAL] = { 0 };
 
@@ -1367,6 +1363,11 @@ gtk_tree_view_init (GtkTreeView *tree_view)
 
   tree_view->priv->event_last_x = -10000;
   tree_view->priv->event_last_y = -10000;
+
+  gtk_widget_register_timeline (GTK_WIDGET (tree_view),
+                                "expand",
+                                500,
+                                (GTimelineTickFunc)gtk_tree_view_expand_tick);
 }
 
 
@@ -1887,8 +1888,8 @@ gtk_tree_view_unrealize (GtkWidget *widget)
       priv->open_dest_timeout = 0;
     }
 
-  remove_expand_collapse_timeout (tree_view);
-  
+  gtk_widget_stop_timeline (widget, "expand");
+
   if (priv->presize_handler_timer != 0)
     {
       g_source_remove (priv->presize_handler_timer);
@@ -8627,8 +8628,7 @@ gtk_tree_view_row_deleted (GtkTreeModel *model,
   /* Cancel editting if we've started */
   gtk_tree_view_stop_editing (tree_view, TRUE);
 
-  /* If we have a node expanded/collapsed timeout, remove it */
-  remove_expand_collapse_timeout (tree_view);
+  gtk_widget_stop_timeline (GTK_WIDGET (tree_view), "expand");
 
   if (tree_view->priv->destroy_count_func)
     {
@@ -8708,8 +8708,8 @@ gtk_tree_view_rows_reordered (GtkTreeModel *model,
   ensure_unprelighted (tree_view);
 
   /* clear the timeout */
-  cancel_arrow_animation (tree_view);
-  
+  gtk_widget_stop_timeline (GTK_WIDGET (tree_view), "expand");
+
   _gtk_rbtree_reorder (tree, new_order, len);
 
   gtk_widget_queue_draw (GTK_WIDGET (tree_view));
@@ -9565,7 +9565,7 @@ gtk_tree_view_draw_arrow (GtkTreeView *tree_view,
                       "treeview",
 		      area.x + area.width / 2,
 		      area.y + area.height / 2,
-		      expander_style);
+		      node->progress);
 }
 
 static void
@@ -10785,7 +10785,7 @@ gtk_tree_view_set_model (GtkTreeView  *tree_view,
       gtk_tree_view_unref_and_check_selection_tree (tree_view, tree_view->priv->tree);
       gtk_tree_view_stop_editing (tree_view, TRUE);
 
-      remove_expand_collapse_timeout (tree_view);
+      gtk_widget_stop_timeline (GTK_WIDGET (tree_view), "expand");
 
       g_signal_handlers_disconnect_by_func (tree_view->priv->model,
 					    gtk_tree_view_row_changed,
@@ -11897,122 +11897,44 @@ gtk_tree_view_expand_all (GtkTreeView *tree_view)
   gtk_tree_path_free (path);
 }
 
-/* Timeout to animate the expander during expands and collapses */
-static gboolean
-expand_collapse_timeout (gpointer data)
-{
-  return do_expand_collapse (data);
-}
-
 static void
-add_expand_collapse_timeout (GtkTreeView *tree_view,
-                             GtkRBTree   *tree,
-                             GtkRBNode   *node,
-                             gboolean     expand)
+start_expansion_animation (GtkTreeView *tree_view,
+                           GtkRBTree   *tree,
+                           GtkRBNode   *node,
+                           gboolean     expand)
 {
-  if (tree_view->priv->expand_collapse_timeout != 0)
-    return;
+  GTimeline *timeline = gtk_widget_get_timeline (GTK_WIDGET (tree_view), "expand");
+  gboolean reset = TRUE;
 
-  tree_view->priv->expand_collapse_timeout =
-      gdk_threads_add_timeout (50, expand_collapse_timeout, tree_view);
+  if (g_timeline_is_running (timeline))
+    {
+      g_timeline_stop (timeline);
+      reset = FALSE;
+    }
+
   tree_view->priv->expanded_collapsed_tree = tree;
   tree_view->priv->expanded_collapsed_node = node;
 
-  if (expand)
-    GTK_RBNODE_SET_FLAG (node, GTK_RBNODE_IS_SEMI_COLLAPSED);
-  else
-    GTK_RBNODE_SET_FLAG (node, GTK_RBNODE_IS_SEMI_EXPANDED);
+  g_timeline_set_direction (timeline, !expand);
+
+  if (reset)
+    g_timeline_reset (timeline);
+
+  g_timeline_start (timeline);
 }
 
 static void
-remove_expand_collapse_timeout (GtkTreeView *tree_view)
+gtk_tree_view_expand_tick (GTimeline *timeline,
+                           gdouble    progress,
+                           gpointer   user_data)
 {
-  if (tree_view->priv->expand_collapse_timeout)
-    {
-      g_source_remove (tree_view->priv->expand_collapse_timeout);
-      tree_view->priv->expand_collapse_timeout = 0;
-    }
+  GtkTreeView *tree_view = (GtkTreeView *)user_data;
+  GtkRBNode *node = tree_view->priv->expanded_collapsed_node;
+  GtkRBTree *tree = tree_view->priv->expanded_collapsed_tree;
 
-  if (tree_view->priv->expanded_collapsed_node != NULL)
-    {
-      GTK_RBNODE_UNSET_FLAG (tree_view->priv->expanded_collapsed_node, GTK_RBNODE_IS_SEMI_EXPANDED);
-      GTK_RBNODE_UNSET_FLAG (tree_view->priv->expanded_collapsed_node, GTK_RBNODE_IS_SEMI_COLLAPSED);
+  node->progress = progress;
 
-      tree_view->priv->expanded_collapsed_node = NULL;
-    }
-}
-
-static void
-cancel_arrow_animation (GtkTreeView *tree_view)
-{
-  if (tree_view->priv->expand_collapse_timeout)
-    {
-      while (do_expand_collapse (tree_view));
-
-      remove_expand_collapse_timeout (tree_view);
-    }
-}
-
-static gboolean
-do_expand_collapse (GtkTreeView *tree_view)
-{
-  GtkRBNode *node;
-  GtkRBTree *tree;
-  gboolean expanding;
-  gboolean redraw;
-
-  redraw = FALSE;
-  expanding = TRUE;
-
-  node = tree_view->priv->expanded_collapsed_node;
-  tree = tree_view->priv->expanded_collapsed_tree;
-
-  if (node->children == NULL)
-    expanding = FALSE;
-
-  if (expanding)
-    {
-      if (GTK_RBNODE_FLAG_SET (node, GTK_RBNODE_IS_SEMI_COLLAPSED))
-	{
-	  GTK_RBNODE_UNSET_FLAG (node, GTK_RBNODE_IS_SEMI_COLLAPSED);
-	  GTK_RBNODE_SET_FLAG (node, GTK_RBNODE_IS_SEMI_EXPANDED);
-
-	  redraw = TRUE;
-
-	}
-      else if (GTK_RBNODE_FLAG_SET (node, GTK_RBNODE_IS_SEMI_EXPANDED))
-	{
-	  GTK_RBNODE_UNSET_FLAG (node, GTK_RBNODE_IS_SEMI_EXPANDED);
-
-	  redraw = TRUE;
-	}
-    }
-  else
-    {
-      if (GTK_RBNODE_FLAG_SET (node, GTK_RBNODE_IS_SEMI_EXPANDED))
-	{
-	  GTK_RBNODE_UNSET_FLAG (node, GTK_RBNODE_IS_SEMI_EXPANDED);
-	  GTK_RBNODE_SET_FLAG (node, GTK_RBNODE_IS_SEMI_COLLAPSED);
-
-	  redraw = TRUE;
-	}
-      else if (GTK_RBNODE_FLAG_SET (node, GTK_RBNODE_IS_SEMI_COLLAPSED))
-	{
-	  GTK_RBNODE_UNSET_FLAG (node, GTK_RBNODE_IS_SEMI_COLLAPSED);
-
-	  redraw = TRUE;
-
-	}
-    }
-
-  if (redraw)
-    {
-      gtk_tree_view_queue_draw_arrow (tree_view, tree, node);
-
-      return TRUE;
-    }
-
-  return FALSE;
+  gtk_tree_view_queue_draw_arrow (tree_view, tree, node);
 }
 
 /**
@@ -12175,10 +12097,10 @@ gtk_tree_view_real_expand_row (GtkTreeView *tree_view,
 			    gtk_tree_path_get_depth (path) + 1,
 			    open_all);
 
-  remove_expand_collapse_timeout (tree_view);
+  gtk_widget_stop_timeline (GTK_WIDGET (tree_view), "expand");
 
   if (animate)
-    add_expand_collapse_timeout (tree_view, tree, node, TRUE);
+    start_expansion_animation (tree_view, tree, node, TRUE);
 
   install_presize_handler (tree_view);
 
@@ -12335,7 +12257,7 @@ gtk_tree_view_real_collapse_row (GtkTreeView *tree_view,
   tree_view->priv->last_button_x = -1;
   tree_view->priv->last_button_y = -1;
 
-  remove_expand_collapse_timeout (tree_view);
+  gtk_widget_stop_timeline (GTK_WIDGET (tree_view), "expand");
 
   if (gtk_tree_view_unref_and_check_selection_tree (tree_view, node->children))
     {
@@ -12344,10 +12266,10 @@ gtk_tree_view_real_collapse_row (GtkTreeView *tree_view,
     }
   else
     _gtk_rbtree_remove (node->children);
-  
+
   if (animate)
-    add_expand_collapse_timeout (tree_view, tree, node, FALSE);
-  
+    start_expansion_animation (tree_view, tree, node, FALSE);
+
   if (gtk_widget_get_mapped (GTK_WIDGET (tree_view)))
     {
       gtk_widget_queue_resize (GTK_WIDGET (tree_view));

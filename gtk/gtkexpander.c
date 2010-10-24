@@ -1588,12 +1588,18 @@ gtk_expander_start_animation (GtkExpander *expander)
 {
   GtkExpanderPrivate *priv = expander->priv;
   GTimeline *timeline = gtk_widget_get_timeline (GTK_WIDGET (expander), "expand");
+  gboolean reset = TRUE;
 
   if (g_timeline_is_running (timeline))
-    g_timeline_stop (timeline);
+    {
+      reset = FALSE;
+      g_timeline_stop (timeline);
+    }
 
   g_timeline_set_direction (timeline, !priv->expanded);
-  g_timeline_reset (timeline);
+
+  if (reset)
+    g_timeline_reset (timeline);
 
   g_timeline_start (timeline);
 }

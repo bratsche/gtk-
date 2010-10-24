@@ -90,7 +90,9 @@ struct _GtkRBNode
    * i.e. node->left->count + node->right->count + 1
    */
   gint count;
-  
+
+  gdouble progress;
+
   /* this is the total of sizes of
    * node->left, node->right, our own height, and the height
    * of all trees in ->children, iff children exists because
