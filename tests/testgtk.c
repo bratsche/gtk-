@@ -3005,6 +3005,10 @@ create_menu (GdkScreen *screen, gint depth, gint length, gboolean tearoff)
 				   create_menu (screen, depth - 1, 5,  TRUE));
     }
 
+  menuitem = gtk_scale_menu_item_new_with_range ("Volume", 65, 0, 100, 1);
+  gtk_widget_show (menuitem);
+  gtk_menu_shell_append (GTK_MENU_SHELL (menu), menuitem);
+
   return menu;
 }
 

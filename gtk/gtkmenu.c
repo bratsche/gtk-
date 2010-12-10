@@ -5679,6 +5679,8 @@ gtk_menu_grab_notify (GtkWidget *widget,
   GtkWindowGroup *group;
   GtkWidget *grab;
   GdkDevice *pointer;
+  gboolean menu_child = FALSE;
+  GtkWidget *tmp;
 
   pointer = _gtk_menu_shell_get_grab_device (GTK_MENU_SHELL (widget));
 
@@ -5694,7 +5696,13 @@ gtk_menu_grab_notify (GtkWidget *widget,
   group = gtk_window_get_group (GTK_WINDOW (toplevel));
   grab = gtk_window_group_get_current_device_grab (group, pointer);
 
-  if (GTK_MENU_SHELL (widget)->active && !GTK_IS_MENU_SHELL (grab))
+  for (tmp = grab; tmp != NULL; tmp = gtk_widget_get_parent (tmp))
+    {
+      if (GTK_IS_MENU_SHELL (tmp))
+        menu_child = TRUE;
+    }
+
+  if (GTK_MENU_SHELL (widget)->active && !menu_child)
     gtk_menu_shell_cancel (GTK_MENU_SHELL (widget));
 }
 

@@ -2737,6 +2737,12 @@ gtk_range_button_release (GtkWidget      *widget,
   return FALSE;
 }
 
+GdkWindow *
+_gtk_range_get_event_window (GtkRange *range)
+{
+  return range->priv->event_window;
+}
+
 /**
  * _gtk_range_get_wheel_delta:
  * @range: a #GtkRange

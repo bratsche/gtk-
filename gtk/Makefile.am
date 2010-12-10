@@ -277,6 +277,7 @@ gtk_public_h_sources =          \
 	gtkrecentmanager.h 	\
 	gtkscale.h		\
 	gtkscalebutton.h	\
+	gtkscalemenuitem.h	\
 	gtkscrollable.h		\
 	gtkscrollbar.h		\
 	gtkscrolledwindow.h	\
@@ -588,6 +589,7 @@ gtk_base_c_sources =            \
 	gtkrecentmanager.c 	\
 	gtkscale.c		\
 	gtkscalebutton.c	\
+	gtkscalemenuitem.c	\
 	gtkscrollable.c		\
 	gtkscrollbar.c		\
 	gtkscrolledwindow.c	\

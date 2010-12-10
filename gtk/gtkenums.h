@@ -245,6 +245,13 @@ typedef enum
   GTK_SCROLL_HORIZONTAL_ENDS
 } GtkScrollStep;
 
+typedef enum
+{
+  GTK_SCALE_MENU_ITEM_STYLE_NONE,
+  GTK_SCALE_MENU_ITEM_STYLE_IMAGE,
+  GTK_SCALE_MENU_ITEM_STYLE_LABEL
+} GtkScaleMenuItemStyle;
+
 /* Orientation for toolbars, etc. */
 typedef enum
 {

@@ -160,6 +160,7 @@
 #include <gtk/gtkrecentmanager.h>
 #include <gtk/gtkscale.h>
 #include <gtk/gtkscalebutton.h>
+#include <gtk/gtkscalemenuitem.h>
 #include <gtk/gtkscrollable.h>
 #include <gtk/gtkscrollbar.h>
 #include <gtk/gtkscrolledwindow.h>
