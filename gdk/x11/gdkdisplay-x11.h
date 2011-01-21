@@ -154,6 +154,8 @@ struct _GdkDisplayX11
 
   /* The offscreen window that has the pointer in it (if any) */
   GdkWindow *active_offscreen_window;
+
+  gint xi_opcode;
 };
 
 struct _GdkDisplayX11Class

@@ -1307,6 +1307,8 @@ fi
 CFLAGS="$saved_cflags"
 LDFLAGS="$saved_ldflags"
 
+echo "X_PACKAGES = " + $X_PACKAGES
+
 # Pull in gio-unix for GDesktopAppInfo usage, see at least gdkapplaunchcontext-x11.c
 if test "x$gdktarget" = "xx11"; then
   GDK_PACKAGES="$PANGO_PACKAGES gio-unix-2.0 $X_PACKAGES gdk-pixbuf-2.0 cairo-$cairo_backend"

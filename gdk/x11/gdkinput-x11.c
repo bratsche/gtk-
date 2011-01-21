@@ -32,6 +32,8 @@
 #include "gdkdisplay-x11.h"
 #include "gdkalias.h"
 
+#include <X11/extensions/XInput2.h>
+
 #include <string.h>
 
 /* Forward declarations */
@@ -346,6 +348,21 @@ _gdk_input_select_events (GdkWindow *impl_window,
 			 classes, num_classes);
 }
 
+gboolean
+is_xi2_supported (GdkDisplayX11 *dpy, XIDeviceInfo *dev)
+{
+  gint i;
+
+  for (i = 0; i < dev->num_classes; i++)
+    {
+      g_print ("   (%d)\n", dev->classes[i]->type);
+      if (dev->classes[i]->type == XITouchClass)
+	return TRUE;
+    }
+
+  return FALSE;
+}
+
 gint
 _gdk_input_common_init (GdkDisplay *display,
 			gint        include_core)
@@ -359,8 +376,33 @@ _gdk_input_common_init (GdkDisplay *display,
 
   display_x11->input_devices = NULL;
   if (XQueryExtension (display_x11->xdisplay, "XInputExtension",
-		       &ignore, &event_base, &ignore))
+		       &display_x11->xi_opcode, &event_base, &ignore))
     {
+      XIDeviceInfo *info, *dev;
+      info = XIQueryDevice(display_x11->xdisplay, XIAllDevices, &num_devices);
+      dev = NULL;
+      gint i;
+
+      for (i = 0; i < num_devices; i++) {
+	g_print ("device %d: %s\n", info[i].deviceid, info[i].name);
+	if (info[i].deviceid == 15)
+	  dev = &info[i];
+      }
+
+      //      g_print ("device %p\n", dev);
+
+      //if (!dev)
+      //  return -1;
+
+      if (dev)
+	{
+	  if (!is_xi2_supported (display_x11->xdisplay, dev)) {
+	    fprintf(stderr, "error: unsupported device for XI2\n");
+	  } else {
+	    fprintf (stderr, "XI2 is supported!\n");
+	  }
+	}
+
       gdk_x11_register_standard_event_type (display,
 					    event_base, 15 /* Number of events */);
 

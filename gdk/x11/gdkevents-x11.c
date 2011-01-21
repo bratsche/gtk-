@@ -62,6 +62,8 @@
 #include <X11/extensions/Xrandr.h>
 #endif
 
+#include <X11/extensions/XInput2.h>
+
 #include <X11/Xatom.h>
 
 typedef struct _GdkIOClosure GdkIOClosure;
@@ -912,6 +914,7 @@ gdk_event_translate (GdkDisplay *display,
   GdkToplevelX11 *toplevel = NULL;
   GdkDisplayX11 *display_x11 = GDK_DISPLAY_X11 (display);
   Window xwindow, filter_xwindow;
+  XGenericEventCookie *cookie;
   
   return_val = FALSE;
 
@@ -1909,6 +1912,44 @@ gdk_event_translate (GdkDisplay *display,
 		_gdk_moveresize_configure_done (display, window);
 	    }
 	}
+      break;
+
+    case GenericEvent:
+      cookie = (XGenericEventCookie *)xevent;
+
+      g_print ("GenericEvent\n");
+
+      if (!XGetEventData (xevent->xany.display, cookie))
+	break;
+
+      if (cookie->extension != display_x11->xi_opcode) {
+	XFreeEventData (xevent->xany.display, cookie);
+	break;
+      } else {
+	const XIDeviceEvent *dev_ev = (XIDeviceEvent *)cookie->data;
+
+	switch (dev_ev->evtype) {
+	case XI_TouchBegin:
+	  g_print ("XI_TouchBegin\n");
+	  break;
+
+	case XI_TouchMotion:
+	  g_print ("XI_TouchMotion\n");
+	  break;
+
+	case XI_TouchEnd:
+	  g_print ("XI_TouchEnd\n");
+	  break;
+
+	case XI_PropertyEvent:
+	  g_print ("XI_PropertyEvent\n");
+	  break;
+
+	default:
+	  break;
+	}
+      }
+
       break;
       
     case PropertyNotify:

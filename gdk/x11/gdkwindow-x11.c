@@ -35,6 +35,8 @@
 #include <X11/XKBlib.h>
 #endif
 
+#include <X11/extensions/XInput2.h>
+
 #include <netinet/in.h>
 #include <unistd.h>
 
@@ -3370,6 +3372,7 @@ static void
 gdk_window_x11_set_events (GdkWindow    *window,
                            GdkEventMask  event_mask)
 {
+  XIEventMask xi_mask;
   long xevent_mask = 0;
   int i;
   
@@ -3386,6 +3389,19 @@ gdk_window_x11_set_events (GdkWindow    *window,
       XSelectInput (GDK_WINDOW_XDISPLAY (window),
 		    GDK_WINDOW_XID (window),
 		    xevent_mask);
+
+
+      xi_mask.deviceid = XIAllDevices; // dev->deviceid;
+      xi_mask.mask_len = XIMaskLen (XI_TouchMotion);
+      xi_mask.mask = calloc (xi_mask.mask_len, sizeof (char));
+
+      XISetMask (xi_mask.mask, XI_PropertyEvent);
+      XISetMask (xi_mask.mask, XI_TouchBegin);
+      XISetMask (xi_mask.mask, XI_TouchMotion);
+      XISetMask (xi_mask.mask, XI_TouchEnd);
+      XISelectEvents (GDK_WINDOW_XDISPLAY (window),
+		      GDK_WINDOW_XID (window),
+		      &xi_mask, 1);
     }
 }
 
