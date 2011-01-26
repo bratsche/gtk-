@@ -9804,6 +9804,9 @@ static const guint type_masks[] = {
   0, /* GDK_OWNER_CHANGE = 34 */
   0, /* GDK_GRAB_BROKEN = 35 */
   0, /* GDK_DAMAGE = 36 */
+  UBUNTU_TOUCH_MASK, /* UBUNTU_TOUCH_BEGIN */
+  UBUNTU_TOUCH_MASK, /* UBUNTU_TOUCH_END */
+  UBUNTU_TOUCH_MASK  /* UBUNTU_TOUCH_MOVE */
 };
 G_STATIC_ASSERT (G_N_ELEMENTS (type_masks) == GDK_EVENT_LAST);
 

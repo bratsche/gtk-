@@ -148,6 +148,8 @@ static void
 gdk_window_impl_x11_init (GdkWindowImplX11 *impl)
 {  
   impl->toplevel_window_type = -1;
+  impl->touch_points = g_hash_table_new (&g_int_hash,
+					 &g_int_equal);
 }
 
 GdkToplevelX11 *
@@ -183,6 +185,14 @@ gdk_window_impl_x11_class_init (GdkWindowImplX11Class *klass)
 }
 
 static void
+destroy_touch_point (gpointer key,
+		     gpointer value,
+		     gpointer user_data)
+{
+  g_free (value);
+}
+
+static void
 gdk_window_impl_x11_finalize (GObject *object)
 {
   GdkWindowObject *wrapper;
@@ -211,6 +221,15 @@ gdk_window_impl_x11_finalize (GObject *object)
 
   if (window_impl->cursor)
     gdk_cursor_unref (window_impl->cursor);
+
+  if (window_impl->touch_points)
+    {
+      g_hash_table_foreach (window_impl->touch_points,
+			    destroy_touch_point,
+			    NULL);
+
+      g_hash_table_destroy (window_impl->touch_points);
+    }
 
   G_OBJECT_CLASS (gdk_window_impl_x11_parent_class)->finalize (object);
 }
@@ -839,6 +858,23 @@ _gdk_window_impl_new (GdkWindow     *window,
 
   if (attributes_mask & GDK_WA_TYPE_HINT)
     gdk_window_set_type_hint (window, attributes->type_hint);
+
+  if (1)
+    {
+      XIEventMask xi_mask;
+
+      xi_mask.deviceid = 15;
+      xi_mask.mask_len = XIMaskLen (XI_TouchMotion);
+      xi_mask.mask = calloc (xi_mask.mask_len, sizeof (char));
+
+      XISetMask (xi_mask.mask, XI_PropertyEvent);
+      XISetMask (xi_mask.mask, XI_TouchBegin);
+      XISetMask (xi_mask.mask, XI_TouchMotion);
+      XISetMask (xi_mask.mask, XI_TouchEnd);
+      XISelectEvents (GDK_WINDOW_XDISPLAY (window),
+		      GDK_WINDOW_XID (window),
+		      &xi_mask, 1);
+    }
 }
 
 static GdkEventMask
@@ -3375,6 +3411,8 @@ gdk_window_x11_set_events (GdkWindow    *window,
   XIEventMask xi_mask;
   long xevent_mask = 0;
   int i;
+
+  g_print ("gdk_window_x11_set_events()\n");
   
   if (!GDK_WINDOW_DESTROYED (window))
     {
@@ -3390,8 +3428,9 @@ gdk_window_x11_set_events (GdkWindow    *window,
 		    GDK_WINDOW_XID (window),
 		    xevent_mask);
 
+      g_print (" **** Setting up XISelectEvents() ****\n");
 
-      xi_mask.deviceid = XIAllDevices; // dev->deviceid;
+      xi_mask.deviceid = 15;  //XIAllDevices; // dev->deviceid;
       xi_mask.mask_len = XIMaskLen (XI_TouchMotion);
       xi_mask.mask = calloc (xi_mask.mask_len, sizeof (char));
 
@@ -5624,6 +5663,107 @@ gdk_window_impl_iface_init (GdkWindowImplIface *iface)
   iface->input_window_destroy = _gdk_input_window_destroy;
   iface->input_window_crossing = _gdk_input_crossing_event;
   iface->supports_native_bg = TRUE;
+}
+
+void
+_ubuntu_gdk_x11_touch_begin_event (GdkWindow *window,
+				   gint       id,
+				   gint       source,
+				   gdouble    x,
+				   gdouble    y)
+{
+  GdkWindowObject *private;
+  GdkWindowImplX11 *impl;
+  UbuntuGdkTouchPointX11 *touch;
+
+  g_return_val_if_fail (GDK_IS_WINDOW (window), NULL);
+
+  if (!WINDOW_IS_TOPLEVEL (window))
+    return NULL;
+
+  private = (GdkWindowObject *)window;
+  impl = GDK_WINDOW_IMPL_X11 (private->impl);
+
+  touch = g_new0 (UbuntuGdkTouchPointX11, 1);
+
+  touch->source  = source;
+  touch->id      = id;
+  touch->start_x = x;
+  touch->start_y = y;
+
+  g_hash_table_insert (impl->touch_points,
+		       &id,
+		       touch);
+}
+
+void
+_ubuntu_gdk_x11_touch_end_event (GdkWindow *window,
+				 gint       id,
+				 gint       source,
+				 gdouble    x,
+				 gdouble    y)
+{
+  GdkWindowObject *private;
+  GdkWindowImplX11 *impl;
+  UbuntuGdkTouchPointX11 *touch;
+
+  g_return_val_if_fail (GDK_IS_WINDOW (window), NULL);
+
+  if (!WINDOW_IS_TOPLEVEL (window))
+    return NULL;
+
+  private = (GdkWindowObject *)window;
+  impl = GDK_WINDOW_IMPL_X11 (private->impl);
+
+  touch = g_hash_table_lookup (impl->touch_points, &id);
+
+  if (touch)
+    {
+      g_free (touch);
+    }
+}
+
+gboolean
+_ubuntu_gdk_x11_touch_update_event (GdkWindow *window,
+				    gint       id,
+				    gint       source,
+				    gdouble    x,
+				    gdouble    y,
+				    gdouble   *tx,
+				    gdouble   *ty,
+				    gdouble   *trx,
+				    gdouble   *try)
+{
+  GdkWindowObject *private;
+  GdkWindowImplX11 *impl;
+  UbuntuGdkTouchPointX11 *touch;
+
+  g_return_val_if_fail (GDK_IS_WINDOW (window), NULL);
+
+  if (!WINDOW_IS_TOPLEVEL (window))
+    return NULL;
+
+  private = (GdkWindowObject *)window;
+  impl = GDK_WINDOW_IMPL_X11 (private->impl);
+
+  touch = g_hash_table_lookup (impl->touch_points, &id);
+
+  if (touch)
+    {
+      if (tx)
+	*tx = (x - touch->last_x);
+      if (ty)
+	*ty = (y - touch->last_y);
+
+      touch->last_x = x;
+      touch->last_y = y;
+
+      return TRUE;
+    }
+  else
+    {
+      return FALSE;
+    }
 }
 
 #define __GDK_WINDOW_X11_C__

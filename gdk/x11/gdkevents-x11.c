@@ -1917,8 +1917,6 @@ gdk_event_translate (GdkDisplay *display,
     case GenericEvent:
       cookie = (XGenericEventCookie *)xevent;
 
-      g_print ("GenericEvent\n");
-
       if (!XGetEventData (xevent->xany.display, cookie))
 	break;
 
@@ -1927,18 +1925,71 @@ gdk_event_translate (GdkDisplay *display,
 	break;
       } else {
 	const XIDeviceEvent *dev_ev = (XIDeviceEvent *)cookie->data;
+	GdkWindow *window2 = gdk_window_lookup_for_display (display, dev_ev->event);
+	gdouble transform_x = 0.0;
+	gdouble transform_y = 0.0;
+	gdouble transform_root_x = 0.0;
+	gdouble transform_root_y = 0.0;
 
 	switch (dev_ev->evtype) {
 	case XI_TouchBegin:
-	  g_print ("XI_TouchBegin\n");
+	  event->touch.type = UBUNTU_TOUCH_BEGIN;
+	  event->touch.window = window2;
+	  event->touch.time= dev_ev->time;
+	  event->touch.x = dev_ev->event_x;
+	  event->touch.y = dev_ev->event_y;
+	  event->touch.x_root = dev_ev->root_x;
+	  event->touch.y_root = dev_ev->root_y;
+	  event->touch.device = display->core_pointer;
+
+	  if (!set_screen_from_root (display, event, dev_ev->root))
+	    {
+	      return_val = FALSE;
+	      break;
+	    }
+
 	  break;
 
 	case XI_TouchMotion:
-	  g_print ("XI_TouchMotion\n");
+	  event->touch.type = UBUNTU_TOUCH_MOVE;
+	  event->touch.window = window2;
+	  event->touch.time = dev_ev->time;
+	  event->touch.x = dev_ev->event_x;
+	  event->touch.y = dev_ev->event_y;
+	  event->touch.x_root = dev_ev->root_x;
+	  event->touch.y_root = dev_ev->root_y;
+	  event->touch.device = display->core_pointer;
+
+	  if (!set_screen_from_root (display, event, dev_ev->root))
+	    {
+	      return_val = FALSE;
+	      break;
+	    }
+
+	  if (!set_screen_from_root (display, event, dev_ev->root))
+	    {
+	      return_val = FALSE;
+	      break;
+	    }
+
 	  break;
 
 	case XI_TouchEnd:
-	  g_print ("XI_TouchEnd\n");
+	  event->touch.type = UBUNTU_TOUCH_END;
+	  event->touch.window = window2;
+	  event->touch.time = dev_ev->time;
+	  event->touch.x = dev_ev->event_x;
+	  event->touch.y = dev_ev->event_y;
+	  event->touch.x_root = dev_ev->root_x;
+	  event->touch.y_root = dev_ev->root_y;
+	  event->touch.device = display->core_pointer;
+
+	  if (!set_screen_from_root (display, event, dev_ev->root))
+	    {
+	      return_val = FALSE;
+	      break;
+	    }
+
 	  break;
 
 	case XI_PropertyEvent:

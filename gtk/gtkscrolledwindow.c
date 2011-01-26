@@ -119,6 +119,8 @@ static void     gtk_scrolled_window_size_allocate      (GtkWidget         *widge
                                                         GtkAllocation     *allocation);
 static gboolean gtk_scrolled_window_scroll_event       (GtkWidget         *widget,
                                                         GdkEventScroll    *event);
+static gboolean gtk_scrolled_window_touch_event        (GtkWidget         *widget,
+							UbuntuEventTouch  *event);
 static gboolean gtk_scrolled_window_focus              (GtkWidget         *widget,
                                                         GtkDirectionType   direction);
 static void     gtk_scrolled_window_add                (GtkContainer      *container,
@@ -202,6 +204,7 @@ gtk_scrolled_window_class_init (GtkScrolledWindowClass *class)
   widget_class->size_allocate = gtk_scrolled_window_size_allocate;
   widget_class->scroll_event = gtk_scrolled_window_scroll_event;
   widget_class->focus = gtk_scrolled_window_focus;
+  widget_class->touch_event = gtk_scrolled_window_touch_event;
 
   container_class->add = gtk_scrolled_window_add;
   container_class->remove = gtk_scrolled_window_remove;
@@ -1563,6 +1566,15 @@ gtk_scrolled_window_size_allocate (GtkWidget     *widget,
     }
   else if (gtk_widget_get_visible (scrolled_window->vscrollbar))
     gtk_widget_hide (scrolled_window->vscrollbar);
+}
+
+static gboolean
+gtk_scrolled_window_touch_event (GtkWidget        *widget,
+				 UbuntuEventTouch *event)
+{
+  g_print ("touch_event!\n");
+
+  return FALSE;
 }
 
 static gboolean

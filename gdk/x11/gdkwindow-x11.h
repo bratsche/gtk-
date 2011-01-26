@@ -43,6 +43,7 @@ typedef struct _GdkToplevelX11 GdkToplevelX11;
 typedef struct _GdkWindowImplX11 GdkWindowImplX11;
 typedef struct _GdkWindowImplX11Class GdkWindowImplX11Class;
 typedef struct _GdkXPositionInfo GdkXPositionInfo;
+typedef struct _UbuntuGdkTouchPointX11 UbuntuGdkTouchPointX11;
 
 /* Window implementation for X11
  */
@@ -69,6 +70,8 @@ struct _GdkWindowImplX11
 #if defined (HAVE_XCOMPOSITE) && defined(HAVE_XDAMAGE) && defined (HAVE_XFIXES)
   Damage damage;
 #endif
+
+  GHashTable *touch_points;
 };
  
 struct _GdkWindowImplX11Class 
@@ -138,6 +141,16 @@ struct _GdkToplevelX11
 #endif
 };
 
+struct _UbuntuGdkTouchPointX11
+{
+  gint source;
+  gint id;
+  gdouble start_x;
+  gdouble start_y;
+  gdouble last_x;
+  gdouble last_y;
+};
+
 GType gdk_window_impl_x11_get_type (void);
 
 void            gdk_x11_window_set_user_time        (GdkWindow *window,
@@ -155,6 +168,26 @@ GdkCursor      *_gdk_x11_window_get_cursor    (GdkWindow *window);
 void            _gdk_x11_window_get_offsets   (GdkWindow *window,
                                                gint      *x_offset,
                                                gint      *y_offset);
+
+void            _ubuntu_gdk_x11_touch_begin_event (GdkWindow *window,
+						   gint       id,
+						   gint       source,
+						   gdouble    x,
+						   gdouble    y);
+gboolean        _ubuntu_gdk_x11_touch_move_event  (GdkWindow *window,
+						   gint       id,
+						   gint       source,
+						   gdouble    x,
+						   gdouble    y,
+						   gdouble   *tx,
+						   gdouble   *ty,
+						   gdouble   *trx,
+						   gdouble   *try);
+void            _ubuntu_gdk_x11_touch_end_event   (GdkWindow *window,
+						   gint       id,
+						   gint       source,
+						   gdouble    x,
+						   gdouble    y);
 
 G_END_DECLS
 

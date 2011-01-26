@@ -637,6 +637,10 @@ gdk_event_get_time (const GdkEvent *event)
       case GDK_EVENT_LAST:
         /* return current time */
         break;
+      case UBUNTU_TOUCH_BEGIN:
+      case UBUNTU_TOUCH_END:
+      case UBUNTU_TOUCH_MOVE:
+	return event->touch.time;
       }
   
   return GDK_CURRENT_TIME;
@@ -716,6 +720,11 @@ gdk_event_get_state (const GdkEvent        *event,
       case GDK_EVENT_LAST:
         /* no state field */
         break;
+      case UBUNTU_TOUCH_BEGIN:
+      case UBUNTU_TOUCH_END:
+      case UBUNTU_TOUCH_MOVE:
+	*state = event->touch.state;
+	return TRUE;
       }
 
   *state = 0;

@@ -64,6 +64,7 @@ typedef struct _GdkEventDND         GdkEventDND;
 typedef struct _GdkEventWindowState GdkEventWindowState;
 typedef struct _GdkEventSetting     GdkEventSetting;
 typedef struct _GdkEventGrabBroken  GdkEventGrabBroken;
+typedef struct _UbuntuEventTouch    UbuntuEventTouch;
 
 typedef union  _GdkEvent	    GdkEvent;
 
@@ -152,6 +153,9 @@ typedef enum
   GDK_OWNER_CHANGE      = 34,
   GDK_GRAB_BROKEN       = 35,
   GDK_DAMAGE            = 36,
+  UBUNTU_TOUCH_BEGIN    = 37,
+  UBUNTU_TOUCH_END      = 38,
+  UBUNTU_TOUCH_MOVE     = 39,
   GDK_EVENT_LAST        /* helper variable for decls */
 } GdkEventType;
 
@@ -181,7 +185,8 @@ typedef enum
   GDK_PROXIMITY_OUT_MASK	= 1 << 19,
   GDK_SUBSTRUCTURE_MASK		= 1 << 20,
   GDK_SCROLL_MASK               = 1 << 21,
-  GDK_ALL_EVENTS_MASK		= 0x3FFFFE
+  UBUNTU_TOUCH_MASK             = 1 << 22,
+  GDK_ALL_EVENTS_MASK		= 0x7ffffe
 } GdkEventMask;
 
 typedef enum
@@ -488,6 +493,16 @@ struct _GdkEventDND {
   gshort x_root, y_root;
 };
 
+struct _UbuntuEventTouch {
+  GdkEventType type;
+  GdkWindow *window;
+  gdouble x, y;
+  gdouble x_root, y_root;
+  guint32 time;
+  GdkDevice *device;
+  guint state;
+};
+
 union _GdkEvent
 {
   GdkEventType		    type;
@@ -511,6 +526,7 @@ union _GdkEvent
   GdkEventWindowState       window_state;
   GdkEventSetting           setting;
   GdkEventGrabBroken        grab_broken;
+  UbuntuEventTouch          touch;
 };
 
 GType     gdk_event_get_type            (void) G_GNUC_CONST;

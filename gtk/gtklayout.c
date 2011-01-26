@@ -870,7 +870,7 @@ gtk_layout_realize (GtkWidget *widget)
   attributes.y = - layout->vadjustment->value;
   attributes.width = MAX (layout->width, widget->allocation.width);
   attributes.height = MAX (layout->height, widget->allocation.height);
-  attributes.event_mask = GDK_EXPOSURE_MASK | GDK_SCROLL_MASK | 
+  attributes.event_mask = GDK_EXPOSURE_MASK | GDK_SCROLL_MASK | UBUNTU_TOUCH_MASK | 
                           gtk_widget_get_events (widget);
 
   layout->bin_window = gdk_window_new (widget->window,

@@ -1623,6 +1623,9 @@ gtk_main_do_event (GdkEvent *event)
     case GDK_BUTTON_PRESS:
     case GDK_2BUTTON_PRESS:
     case GDK_3BUTTON_PRESS:
+    case UBUNTU_TOUCH_BEGIN:
+    case UBUNTU_TOUCH_END:
+    case UBUNTU_TOUCH_MOVE:
       gtk_propagate_event (grab_widget, event);
       break;
 

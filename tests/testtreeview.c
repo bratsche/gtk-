@@ -696,6 +696,22 @@ static GtkTargetEntry row_targets[] = {
     TARGET_GTK_TREE_MODEL_ROW }
 };
 
+static gboolean
+touch_event (GtkWidget *widget,
+	     UbuntuEventTouch *event)
+{
+  g_print ("touch sw\n");
+  return TRUE;
+}
+
+static gboolean
+touch_window (GtkWidget *widget,
+	      UbuntuEventTouch *event)
+{
+  g_print ("touch window\n");
+  return FALSE;
+}
+
 int
 main (int    argc,
       char **argv)
@@ -735,6 +751,7 @@ main (int    argc,
   run_automated_tests ();
   
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+  g_signal_connect (window, "touch-event", G_CALLBACK (touch_window), NULL);
   g_signal_connect (window, "destroy", G_CALLBACK (gtk_main_quit), NULL);
   gtk_window_set_default_size (GTK_WINDOW (window), 430, 400);
 
@@ -835,6 +852,10 @@ main (int    argc,
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw),
                                   GTK_POLICY_AUTOMATIC,
                                   GTK_POLICY_AUTOMATIC);
+  g_signal_connect (sw,
+		    "touch-event",
+		    G_CALLBACK (touch_event),
+		    NULL);
   
   gtk_table_attach (GTK_TABLE (table), sw,
                     0, 1, 2, 3,

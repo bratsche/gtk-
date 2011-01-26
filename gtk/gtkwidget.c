@@ -197,6 +197,7 @@ enum {
   KEYNAV_FAILED,
   DRAG_FAILED,
   DAMAGE_EVENT,
+  TOUCH_EVENT,
   LAST_SIGNAL
 };
 
@@ -540,6 +541,7 @@ gtk_widget_class_init (GtkWidgetClass *klass)
   klass->can_activate_accel = gtk_widget_real_can_activate_accel;
   klass->grab_broken_event = NULL;
   klass->query_tooltip = gtk_widget_real_query_tooltip;
+  klass->touch_event = NULL;
 
   klass->show_help = gtk_widget_real_show_help;
   
@@ -1182,6 +1184,17 @@ gtk_widget_class_init (GtkWidgetClass *klass)
 		  G_SIGNAL_RUN_LAST,
 		  G_STRUCT_OFFSET (GtkWidgetClass, button_release_event),
 		  _gtk_boolean_handled_accumulator, NULL,
+		  _gtk_marshal_BOOLEAN__BOXED,
+		  G_TYPE_BOOLEAN, 1,
+		  GDK_TYPE_EVENT | G_SIGNAL_TYPE_STATIC_SCOPE);
+
+  widget_signals[TOUCH_EVENT] =
+    g_signal_new (I_("touch-event"),
+		  G_TYPE_FROM_CLASS (gobject_class),
+		  G_SIGNAL_RUN_LAST,
+		  G_STRUCT_OFFSET (GtkWidgetClass, touch_event),
+		  _gtk_boolean_handled_accumulator,
+		  NULL,
 		  _gtk_marshal_BOOLEAN__BOXED,
 		  G_TYPE_BOOLEAN, 1,
 		  GDK_TYPE_EVENT | G_SIGNAL_TYPE_STATIC_SCOPE);
@@ -4967,6 +4980,11 @@ gtk_widget_event_internal (GtkWidget *widget,
 	  break;
 	case GDK_DAMAGE:
 	  signal_num = DAMAGE_EVENT;
+	  break;
+	case UBUNTU_TOUCH_BEGIN:
+	case UBUNTU_TOUCH_END:
+	case UBUNTU_TOUCH_MOVE:
+	  signal_num = TOUCH_EVENT;
 	  break;
 	default:
 	  g_warning ("gtk_widget_event(): unhandled event type: %d", event->type);

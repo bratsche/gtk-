@@ -726,6 +726,8 @@ struct _GtkWidgetClass
 					 GdkEventAny	     *event);
   gboolean (* window_state_event)	(GtkWidget	     *widget,
 					 GdkEventWindowState *event);
+  gboolean (* touch_event)              (GtkWidget           *widget,
+					 UbuntuEventTouch    *event);
   
   /* selection */
   void (* selection_get)           (GtkWidget          *widget,
@@ -810,7 +812,6 @@ struct _GtkWidgetClass
   /* Padding for future expansion */
   void (*_gtk_reserved5) (void);
   void (*_gtk_reserved6) (void);
-  void (*_gtk_reserved7) (void);
 };
 
 struct _GtkWidgetAuxInfo

@@ -355,7 +355,6 @@ is_xi2_supported (GdkDisplayX11 *dpy, XIDeviceInfo *dev)
 
   for (i = 0; i < dev->num_classes; i++)
     {
-      g_print ("   (%d)\n", dev->classes[i]->type);
       if (dev->classes[i]->type == XITouchClass)
 	return TRUE;
     }
@@ -384,24 +383,9 @@ _gdk_input_common_init (GdkDisplay *display,
       gint i;
 
       for (i = 0; i < num_devices; i++) {
-	g_print ("device %d: %s\n", info[i].deviceid, info[i].name);
-	if (info[i].deviceid == 15)
+	if (is_xi2_supported (display_x11->xdisplay, &info[i]))
 	  dev = &info[i];
       }
-
-      //      g_print ("device %p\n", dev);
-
-      //if (!dev)
-      //  return -1;
-
-      if (dev)
-	{
-	  if (!is_xi2_supported (display_x11->xdisplay, dev)) {
-	    fprintf(stderr, "error: unsupported device for XI2\n");
-	  } else {
-	    fprintf (stderr, "XI2 is supported!\n");
-	  }
-	}
 
       gdk_x11_register_standard_event_type (display,
 					    event_base, 15 /* Number of events */);
@@ -410,11 +394,18 @@ _gdk_input_common_init (GdkDisplay *display,
 
       for(loop=0; loop<num_devices; loop++)
 	{
-	  GdkDevicePrivate *gdkdev = gdk_input_device_new(display,
-							  &devices[loop],
-							  include_core);
-	  if (gdkdev)
-	    display_x11->input_devices = g_list_append(display_x11->input_devices, gdkdev);
+	  if (dev->deviceid != loop)
+	    {
+	      GdkDevicePrivate *gdkdev = gdk_input_device_new(display,
+							      &devices[loop],
+							      include_core);
+	      if (gdkdev)
+		display_x11->input_devices = g_list_append(display_x11->input_devices, gdkdev);
+	    }
+	  else
+	    {
+	      g_print ("** Skipping %d\n", loop);
+	    }
 	}
       XFreeDeviceList(devices);
     }
